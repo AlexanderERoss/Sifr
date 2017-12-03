@@ -12,24 +12,34 @@ class sifrisation(object):
         self.dig_list = dig_list
 
         sifr_sys = {}
+        sifr_desys = {}
         counter = 1
         
         for sifr in dig_list:
             sifr_sys[counter] = sifr
+            sifr_desys[sifr] = counter
             counter += 1
 
         self.sifr_sys = sifr_sys
-
-    def sifrise(num_string):
+        self.sifr_desys = sifr_desys
+        
+    def sifrise(self, num_string):
         ret_list = []
         for num in num_string:
-            ret_list.append(int(num))
+            ret_list.append(self.sifr_desys[num])
 
         return ret_list
 
-    def symbolise(num_list):
+    def symbolise(self, num_list):
         ret_string = ""
         for num in num_list:
-            ret_string += str(num)
+            ret_string += str(self.sifr_sys[num])
 
         return ret_string
+    
+
+    def addn(self, a1, a2):
+        pass
+    
+    def mult(self, m1, m2):
+        pass
