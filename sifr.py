@@ -53,6 +53,10 @@ class SifrSystem(object):
 
             result = addition_counter[-1] + result
             print("  Result: ", result)
+        if carry:
+            result = self.digit_list[1] + result
+            
+        print(" Final Result: ", result)
         return result
 
 class Sifr(object):
@@ -70,9 +74,19 @@ class Sifr(object):
         digits2 = add_no.sifr.split(dec)
         iden = self.sifr_system.digit_list[0]
         n1 = digits1[0]
-        d1 = digits1[1] if len(digits2) > 1 else iden
+        
+        if len(digits2) > 1:
+            d1 = digits1[1] 
+        else:
+            d1 = iden
+
+        if len(digits2) > 1:
+            d2 = digits2[1]
+        else:
+            d2 = iden
+            
         n2 = digits2[0]
-        d2 = digits2[1] if len(digits2) > 1 else iden
+
 
         print("n1: ", n1)
         print("d1: ", d1)
@@ -102,15 +116,18 @@ class Sifr(object):
         print("d_large: ", d_large)
         print("d_small: ", d_small)
             
-        d = b_add(d_large, d_small)
+        d_tot = [dt for dt in b_add(d_large, d_small)]
+        d = ''
 
-        n = b_add(n1, n2)
+        # Takes the extra number at the start of the decimal add
+        for d_fin in d_large:
+            d = d_tot.pop() + d
+
+        if len(d_tot) > 0:
+            n = b_add(b_add(n1, n2), d_tot[0])
+        else:
+            n = b_add(n1, n2)
         
-        unit =  self.sifr_system.digit_list[1]
-        # Need to add carry function if carry:
-            # n = b_add(n, unit)
-
         sifr_string = n + dec + d
 
         return Sifr(sifr_string, self.sifr_system)
-
