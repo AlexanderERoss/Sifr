@@ -7,7 +7,7 @@
 ################################################################################
 
 class SifrSystem(object):
-    def __init__(self, digit_list, dec_point):
+    def __init__(self, digit_list, dec_point, neg_sym='-'):
         if len(set(digit_list)) != len(digit_list):
             raise Exception("The list off characters is not unique " +
                             "and thus can't be used as a numbering system")
