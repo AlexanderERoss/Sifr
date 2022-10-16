@@ -16,6 +16,7 @@ class SifrSystem(object):
                       "and thus can't be used as a numbering system")
         self.digit_list = digit_list
         self.sep_point = sep_point
+        self.neg_sym = neg_sym
         self.base_no = len(self.digit_list)
 
     def _magn_sort(self, d1, d2, main_no=True):
@@ -72,9 +73,9 @@ class SifrSystem(object):
                 # If both are equal
                 if d1_eq and d2_eq:
                     # Recursively check next number sequence
-                    d_less, d_more = self._magn_sort(d1_maj[1:],
-                                                     d2_maj[1:],
-                                                     False)
+                    d_less, d_more, _ = self._magn_sort(d1_maj[1:],
+                                                        d2_maj[1:],
+                                                        False)
                     if d_less == d1_maj[1:]:
                         return d1, d2, False
                     else:
@@ -85,6 +86,7 @@ class SifrSystem(object):
                     return d1, d2, False
 
     def _base_add_alg(self, d1, d2):
+        print("### START BASE ADD")
         small_no, large_no, _ = self._magn_sort(d1, d2)
         print("Large no: ", large_no)
         print("Small no: ", small_no)
@@ -128,11 +130,13 @@ class SifrSystem(object):
             result = self.digit_list[1] + result
 
         print(" Final Result: ", result)
+        print("### END BASE ADD")
         return result
 
     def _base_neg_alg(self, d1, d2):
         '''Base algorithm to negate two numbers however the largest
         number must go first for simplicity'''
+        print("### START BASE NEG")        
         small_no, large_no = self._magn_sort(d1, d2)
         print("Large no: ", large_no)
         print("Small no: ", small_no)
@@ -176,9 +180,11 @@ class SifrSystem(object):
             result = self.digit_list[1] + result
 
         print(" Final Result: ", result)
+        print("### END BASE NEG")      
         return result
 
     def _dec_combine(self, d1, d2, arith_function):
+        print("### START DEC COMBINE")
         sep = self.sep_point
         # Orders the given Sifr strings
         print('d1: ', d1, ' Type: ', str(type(d1)))
@@ -193,15 +199,15 @@ class SifrSystem(object):
         iden = self.digit_list[0]
 
         # Assigns the main number and xcimal from ordered numbers
-        num_lg = dsml_digits[0]
-        if len(dsml_digits) > 1:
+        num_lg = dlg_digits[0]
+        if len(dlg_digits) > 1:
             xcimal_lg = dlg_digits[1]
         else:
             xcimal_lg = iden
 
-        num_sml = dlg_digits[0]
-        if len(dlg_digits) > 1:
-            xcimal_sml = dlg_digits[1]
+        num_sml = dsml_digits[0]
+        if len(dsml_digits) > 1:
+            xcimal_sml = dsml_digits[1]
         else:
             xcimal_sml = iden
 
@@ -246,6 +252,7 @@ class SifrSystem(object):
         while arith_answer[-1] == iden:
             arith_answer = arith_answer[:-1]
 
+        print("### END DEC COMBINE")      
         return arith_answer
 
 
@@ -261,13 +268,14 @@ class Sifr(object):
     def __repr__(self):
         return self.sifr
 
-    def __add__(self, add_no: Sifr):
+    def __add__(self, add_no):
+        print("### START MAIN ADD")
         if self.sifr_system != add_no.sifr_system:
             raise Exception("Sifr Systems do not match and thus ",
                             "can't be added together")
         b_add = self.sifr_system._base_add_alg
 
-        neg_sym = self.sifr_system.sep_point
+        neg_sym = self.sifr_system.neg_sym
 
         if (not self.is_neg and not add_no.is_neg):
             return self.sifr_system._dec_combine(self.sifr,
@@ -291,13 +299,17 @@ class Sifr(object):
         else:
             result = self.sifr_system.dec_combine(add_no_mag, self_mag, b_neg)
             result = result if self.is_neg else neg_sym + result
+        print("### MAIN END ADD")
         return result
 
-    def __sub__(self, sub_no: Sifr):
+    def __sub__(self, sub_no):
+        print("### MAIN START SUB")
         # If subtracted number is negative just add
         if sub_no.sifr[0] == self.sifr_system.sep_point:
+            print("### MAIN END SUB")
             return self.__add__(Sifr(sub_no.sifr[1:], self.sifr_system))
         # Otherwise just add the negative
         else:
-            return self.__add(Sifr(self.sifr_system.neg_sym + sub_no.sifr,
-                                   self.sifr_system))
+            print("### MAIN END SUB")
+            return self.__add__(Sifr(self.sifr_system.neg_sym + sub_no.sifr,
+                                     self.sifr_system))
