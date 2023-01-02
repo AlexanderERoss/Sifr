@@ -4,7 +4,15 @@
 # #############################################################################
 # Sifr is the main script which calculates the main arithmetic of the
 # generalised number system.
+# It's purpose is not efficiency, but rather to break down mathematical
+# processes to its component functions.
 # #############################################################################
+
+import logging
+
+# DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
+logging.basicConfig(level=logging.DEBUG)
+
 
 class SifrSystem(object):
     def __init__(self, digit_list='0123456789', sep_point='.', neg_sym='-'):
@@ -12,43 +20,61 @@ class SifrSystem(object):
         sep_not_in_digits = sep_point not in digit_list
         neg_not_in_digits = neg_sym not in digit_list
         if unique_digits and sep_not_in_digits and neg_not_in_digits:
-            Exception("The list off characters is not unique " +
-                      "and thus can't be used as a numbering system")
+            raise Exception("The list off characters is not unique " +
+                            "and thus can't be used as a numbering system")
         self.digit_list = digit_list
         self.sep_point = sep_point
         self.neg_sym = neg_sym
         self.base_no = len(self.digit_list)
+        logging.debug("SifrSystem instantiated with characters: " +
+                      str(digit_list) +
+                      ", sub-integer separator: " +
+                      str(sep_point) +
+                      ", and negative symbol: " +
+                      neg_sym)
 
     def _magn_sort(self, d1, d2, main_no=True):
         '''Sorts the Sifr numbers in order of their magnitude from smallest
         to largest. Does not accept negative numbers, only xcimals'''
+        if main_no:
+            logging.debug("### Magnitude sort started with " +
+                          str(d1) +
+                          " and " +
+                          str(d2))
+        else:
+            logging.debug("### Sub-magnitude sort started with " +
+                          str(d1) + " and " + str(d2))
 
-        print("sort started")
         # Split the numbers on the xcimal point to get both components
         if self.sep_point in d1:
+            logging.debug("First number has separator")
             d1_maj, d1_min = d1.split(self.sep_point)
         else:
+            logging.debug("First number does not have separator")
             d1_maj = d1
             d1_min = self.digit_list[0]
         if self.sep_point in d2:
+            logging.debug("Second number has separator")
             d2_maj, d2_min = d2.split(self.sep_point)
         else:
+            logging.debug("Second number does not have separator")
             d2_maj = d2
             d2_min = self.digit_list[0]
 
         # If first number has more digits
         if len(d1_maj) > len(d2_maj):
+            logging.info("   " + d2 + " smaller than " + d1)
             return d2, d1, False
         # If second number has more digits
         elif len(d1_maj) < len(d2_maj):
+            logging.info(d1 + " smaller than " + d2)
             return d1, d2, False
         # If same number of digits cycle through all digits and compare
         # their sequence in the digit list
         else:
-            print("Loop started")
+            logging.debug("  Main digit is same length so comparing values")
             for digit in self.digit_list[::-1]:
                 # If there are no digits left of the major number
-                print(digit)
                 if len(d1_maj) == 0:
                     if main_no:
                         # Compare the number after xcimal point
@@ -57,19 +83,20 @@ class SifrSystem(object):
                                                                         False)
                         # If d2 had the smaller xcimal
                         if d_min_less == d2_min:
+                            logging.info(d2 + " smaller than " + d1)
                             return d2, d1, False
                         # If d1 is smaller xcimal or equal
                         else:
+                            logging.info(d1 + " smaller than " + d2)
                             return d1, d2, xcmeq
                     else:
                         # Two numbers are completely equal
+                        logging.info(d1 + " smaller than " + d2)
                         return d1, d2, True
                 # Checks if either number's digit is equal to next highest
                 # in digit list
                 d1_eq = digit == d1[0]
                 d2_eq = digit == d2[0]
-                print('d1_eq: ', d1_eq)
-                print('d2_eq: ', d2_eq)
                 # If both are equal
                 if d1_eq and d2_eq:
                     # Recursively check next number sequence
@@ -77,23 +104,29 @@ class SifrSystem(object):
                                                         d2_maj[1:],
                                                         False)
                     if d_less == d1_maj[1:]:
+                        logging.info(d1 + " smaller than " + d2)
                         return d1, d2, False
                     else:
+                        logging.info(str(d2) + " smaller than " + str(d1))
                         return d2, d1, False
                 elif d1_eq:
+                    logging.info(str(d2) + " smaller than " + str(d1))
                     return d2, d1, False
                 elif d2_eq:
+                    logging.info(d1 + " smaller than " + d2)
                     return d1, d2, False
 
     def _base_add_alg(self, d1, d2):
-        print("### START BASE ADD")
+        logging.debug("### Base addition algorithm commenced")
         small_no, large_no, _ = self._magn_sort(d1, d2)
-        print("Large no: ", large_no)
-        print("Small no: ", small_no)
         result = ''
         carry = False
 
+        logging.debug("  Adding Small no: " + small_no +
+                      " Large no: " + large_no)
+
         for digit in range(1, len(large_no)+1):
+            logging.debug("    Large number digit to add: " + str(digit))
             # Use counter to track addition sequence
             addition_counter = [c for c in self.digit_list[::-1]*2]
 
@@ -101,8 +134,7 @@ class SifrSystem(object):
             for l_count in [lc for lc in self.digit_list]:
                 if l_count == large_no[-digit]:
                     break
-                last_no = addition_counter.pop()
-                print("    last no:  ", last_no)
+                addition_counter.pop()
 
             # If addition exceeds base in previous another is added
             if carry:
@@ -110,85 +142,88 @@ class SifrSystem(object):
 
             # Loops through each number in small number to add
             if digit <= len(small_no):
+                logging.debug("    Small number digit to add: " +
+                              str(small_no[-digit]))
                 for s_count in [lc for lc in self.digit_list]:
                     if s_count == small_no[-digit]:
                         break
-                    last_no = addition_counter.pop()
-                    print("    last no:  ", last_no)
+                    addition_counter.pop()
 
             # Adds a carry for the next loop if there is only one last digit
             # in counter (i.e. base number has been crossed)
             carry = True if len([d for d in addition_counter
                                  if d == self.digit_list[-1]]) == 1 else False
-            print("Carry: ", str(carry))
+            logging.debug("    Carry: " + str(carry))
 
+            logging.debug("  Result: " + addition_counter[-1])
             result = addition_counter[-1] + result
-            print("  Result: ", result)
+            logging.debug("  New digit for step: " + str(result))
 
         # Adds the first digit of system at start if there's carry at end
         if carry:
             result = self.digit_list[1] + result
 
-        print(" Final Result: ", result)
-        print("### END BASE ADD")
+        logging.info("Final Base Add Result: " + str(result))
+        logging.debug("### END BASE ADD")
         return result
 
     def _base_neg_alg(self, d1, d2):
         '''Base algorithm to negate two numbers however the largest
         number must go first for simplicity'''
-        print("### START BASE NEG")        
-        small_no, large_no = self._magn_sort(d1, d2)
-        print("Large no: ", large_no)
-        print("Small no: ", small_no)
+        logging.debug("### START BASE NEG")
+        small_no, large_no, _ = self._magn_sort(d1, d2)
+        logging.debug("  Small no: " + small_no + " Large no: " + large_no)
         result = ''
         carry = False
 
         for digit in range(1, len(large_no)+1):
+            logging.info("    Large number digit being added: "
+                         + str(large_no[-digit]))
             # Use counter to track subtractions stack
             subtraction_counter = self.digit_list
 
             # Loops through counter for large number to add
-            for l_count in [lc for lc in self.digit_list]:
-                last_no = subtraction_counter.append(l_count)
-                if l_count == large_no[-digit]:
+            for l_dig in self.digit_list:
+                if l_dig == large_no[-digit]:
                     break
-                print("    last no:  ", last_no)
+                subtraction_counter = subtraction_counter + l_dig
 
             # If addition exceeds base in previous another is added
             if carry:
-                subtraction_counter.pop()
+                subtraction_counter = subtraction_counter[1:]
 
             # Loops through each number in small number to subtract
             if digit <= len(small_no):
-                for s_count in [lc for lc in self.digit_list]:
+                logging.info("    Small number digit to subtract: "
+                             + str(small_no[-digit]))
+                for s_count in self.digit_list:
                     if s_count == small_no[-digit]:
                         break
-                    last_no = subtraction_counter.pop()
-                    print("    last no:  ", last_no)
+                    subtraction_counter = subtraction_counter[:-1]
 
             # Adds a carry for the next loop if there is only one last digit
             # in counter (i.e. base number has been crossed)
             carry = True if len([d for d in subtraction_counter
                                  if d == self.digit_list[-1]]) == 1 else False
-            print("Carry: ", str(carry))
+            logging.debug("    Carry: " + str(carry))
 
             result = subtraction_counter[-1] + result
-            print("  Result: ", result)
+            logging.debug("  Sequence result: " + result)
 
         # Adds the first digit of system at start if there's carry at end
         if carry:
             result = self.digit_list[1] + result
 
-        print(" Final Result: ", result)
-        print("### END BASE NEG")      
+        logging.info("Final Result: " + result)
+        logging.debug("### END BASE NEG")
         return result
 
     def _dec_combine(self, d1, d2, arith_function):
-        print("### START DEC COMBINE")
+        logging.debug("### START DEC COMBINE")
         sep = self.sep_point
         # Orders the given Sifr strings
-        print('d1: ', d1, ' Type: ', str(type(d1)))
-        print('d2: ', d2, ' Type: ', str(type(d2)))
+        logging.debug('d1: ' + str(d1) + ' Type: ' + str(type(d1)))
+        logging.debug('d2: ' + str(d2) + ' Type: ' + str(type(d2)))
         sml_no, lg_no, _ = self._magn_sort(d1, d2, True)
 
         # Separates these into main number and xcimal
@@ -252,7 +287,7 @@ class SifrSystem(object):
         while arith_answer[-1] == iden:
             arith_answer = arith_answer[:-1]
 
-        print("### END DEC COMBINE")      
+        logging.debug("### END DEC COMBINE")
         return arith_answer
 
 
@@ -263,13 +298,14 @@ class Sifr(object):
         self.sifr = sifr
         self.sifr_system = sifr_system
         self.no_digits = len(sifr)
-        self.is_neg = sifr[0] == sifr_system.sep_point
+        self.is_neg = sifr[0] == sifr_system.neg_sym
+        self.magnitude = sifr if sifr_system.neg_sym != sifr[0] else sifr[1:]
 
     def __repr__(self):
         return self.sifr
 
     def __add__(self, add_no):
-        print("### START MAIN ADD")
+        logging.debug("### START MAIN ADD")
         if self.sifr_system != add_no.sifr_system:
             raise Exception("Sifr Systems do not match and thus ",
                             "can't be added together")
@@ -277,39 +313,52 @@ class Sifr(object):
 
         neg_sym = self.sifr_system.neg_sym
 
-        if (not self.is_neg and not add_no.is_neg):
-            return self.sifr_system._dec_combine(self.sifr,
-                                                 add_no.sifr,
-                                                 b_add)
+        if not self.is_neg and not add_no.is_neg:
+            logging.info("  Both numbers are not negative, proceeding to add")
+            return Sifr(self.sifr_system._dec_combine(self.sifr,
+                                                      add_no.sifr,
+                                                      b_add),
+                        self.sifr_system)
         elif self.is_neg and add_no.is_neg:
-            return neg_sym + self.sifr_system.dec_combine(self.sifr[1:],
-                                                          add_no.sifr[1:],
-                                                          b_add)
+            logging.info("  Both numbers are negative, proceeding to add")
+            ans = Sifr(neg_sym + self.sifr_system._dec_combine(self.sifr[1:],
+                                                               add_no.sifr[1:],
+                                                               b_add),
+                       self.sifr_system)
+            return ans
 
         b_neg = self.sifr_system._base_neg_alg
         self_mag = self.sifr if not self.is_neg else self.sifr[1:]
         add_no_mag = add_no.sifr if not add_no.is_neg else add_no.sifr[1:]
 
-        sml_mag, big_mag = self.sifr_system._magn_sort(self_mag, add_no_mag)
+        sml_mag, big_mag, _ = self.sifr_system._magn_sort(self_mag, add_no_mag)
         is_self_bigger = big_mag == self_mag
 
         if is_self_bigger:
-            result = self.sifr_system.dec_combine(self_mag, add_no_mag, b_neg)
+            logging.debug("  First number is bigger")
+            result = self.sifr_system._dec_combine(self_mag, add_no_mag, b_neg)
             result = result if not self.is_neg else neg_sym + result
         else:
-            result = self.sifr_system.dec_combine(add_no_mag, self_mag, b_neg)
+            logging.debug("  Second number is bigger")
+            result = self.sifr_system._dec_combine(add_no_mag, self_mag, b_neg)
             result = result if self.is_neg else neg_sym + result
-        print("### MAIN END ADD")
+        logging.debug("### MAIN END ADD")
         return result
 
     def __sub__(self, sub_no):
-        print("### MAIN START SUB")
+        logging.debug("### MAIN START SUB")
         # If subtracted number is negative just add
         if sub_no.sifr[0] == self.sifr_system.sep_point:
-            print("### MAIN END SUB")
+            logging.debug("### MAIN END SUB")
             return self.__add__(Sifr(sub_no.sifr[1:], self.sifr_system))
         # Otherwise just add the negative
         else:
-            print("### MAIN END SUB")
+            logging.debug("### MAIN END SUB")
             return self.__add__(Sifr(self.sifr_system.neg_sym + sub_no.sifr,
                                      self.sifr_system))
+
+
+s = SifrSystem()
+a = Sifr('32.461', s)
+b = Sifr('31.2614', s)
+c = Sifr('-31.261', s)
