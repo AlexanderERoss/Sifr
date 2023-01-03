@@ -33,6 +33,34 @@ class SifrSystem(object):
                       ", and negative symbol: " +
                       neg_sym)
 
+    def _incr(self, prev_no):
+        if prev_no not in self.digit_list:
+            raise Exception("Digit not in list and thus different " +
+                            "numbering system")
+        disp_next = False
+        for digit in self.digit_list:
+            if disp_next:
+                carry = False
+                return digit, carry
+            if digit == prev_no:
+                disp_next = True
+        carry = True
+        return self.digit_list[0], carry
+
+    def _inv_incr(self, prev_no):
+        if prev_no not in self.digit_list:
+            raise Exception("Digit not in list and thus different " +
+                            "numbering system")
+        disp_next = False
+        for digit in self.digit_list[::-1]:
+            if disp_next:
+                carry = False
+                return digit, carry
+            if digit == prev_no:
+                disp_next = True
+        carry = True
+        return self.digit_list[-1], carry
+
     def _magn_sort(self, d1, d2, main_no=True):
         '''Sorts the Sifr numbers in order of their magnitude from smallest
         to largest. Does not accept negative numbers, only xcimals'''
