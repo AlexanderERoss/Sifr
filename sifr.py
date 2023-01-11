@@ -33,7 +33,7 @@ class SifrSystem(object):
                       ", and negative symbol: " +
                       neg_sym)
 
-    def _incr(self, prev_no):
+    def incr(self, prev_no):
         if prev_no not in self.digit_list:
             raise Exception("Digit not in list and thus different " +
                             "numbering system")
@@ -47,7 +47,7 @@ class SifrSystem(object):
         carry = True
         return self.digit_list[0], carry
 
-    def _inv_incr(self, prev_no):
+    def _incr_inv(self, prev_no):
         if prev_no not in self.digit_list:
             raise Exception("Digit not in list and thus different " +
                             "numbering system")
@@ -61,6 +61,9 @@ class SifrSystem(object):
         carry = True
         return self.digit_list[-1], carry
 
+    def magn(self, d):
+        return d if self.neg_sym == d[0] else d[1:]
+
     def _magn_sort(self, d1, d2, main_no=True):
         '''Sorts the Sifr numbers in order of their magnitude from smallest
         to largest. Does not accept negative numbers, only xcimals'''
@@ -72,6 +75,9 @@ class SifrSystem(object):
         else:
             logging.debug("### Sub-magnitude sort started with " +
                           str(d1) + " and " + str(d2))
+
+        d1 = self.magn(d1)
+        d2 = self.magn(d2)
 
         # Split the numbers on the xcimal point to get both components
         if self.sep_point in d1:
@@ -146,50 +152,46 @@ class SifrSystem(object):
 
     def _base_add_alg(self, d1, d2):
         logging.debug("### Base addition algorithm commenced")
-        small_no, large_no, _ = self._magn_sort(d1, d2)
         result = ''
+
+        logging.debug("  Adding " + d2 + " to " + d1)
+
+        base_digit_range = range(1, len(d1)+1)
         carry = False
 
-        logging.debug("  Adding Small no: " + small_no +
-                      " Large no: " + large_no)
+        for digit in base_digit_range:
+            if len(d1) == 0:
+                break
 
-        for digit in range(1, len(large_no)+1):
-            logging.debug("    Large number digit to add: " + str(digit))
-            # Use counter to track addition sequence
-            addition_counter = [c for c in self.digit_list[::-1]*2]
-
-            # Loops through counter for large number to add
-            for l_count in [lc for lc in self.digit_list]:
-                if l_count == large_no[-digit]:
-                    break
-                addition_counter.pop()
+            d1_digit = d1[-1]
+            d1 = d1[:-1]
 
             # If addition exceeds base in previous another is added
             if carry:
-                addition_counter.pop()
+                d1_digit, dig_carry = self.incr(d1_digit)
+                carry = True if dig_carry else False
 
-            # Loops through each number in small number to add
-            if digit <= len(small_no):
-                logging.debug("    Small number digit to add: " +
-                              str(small_no[-digit]))
-                for s_count in [lc for lc in self.digit_list]:
-                    if s_count == small_no[-digit]:
+            if len(d2) != 0:
+                # Adds the digit to be added
+                for dig_seq in self.digit_list:
+                    if dig_seq == d2[-1]:
+                        d2 = d2[:-1]
                         break
-                    addition_counter.pop()
+                    d1_digit, dig_carry = self.incr(d1_digit)
+                    carry = True if dig_carry else carry
 
-            # Adds a carry for the next loop if there is only one last digit
-            # in counter (i.e. base number has been crossed)
-            carry = True if len([d for d in addition_counter
-                                 if d == self.digit_list[-1]]) == 1 else False
-            logging.debug("    Carry: " + str(carry))
-
-            logging.debug("  Result: " + addition_counter[-1])
-            result = addition_counter[-1] + result
+            logging.debug("  Result: " + d1_digit)
+            result = d1_digit + result
             logging.debug("  New digit for step: " + str(result))
 
         # Adds the first digit of system at start if there's carry at end
         if carry:
-            result = self.digit_list[1] + result
+            if len(d2) == 0:
+                result = self.digit_list[1] + result
+            elif len(d2) == 1:
+                result = self.incr(d2)[0] + result
+            else:
+                result = d2[:-1] + self.incr(d2[-1])[0] + result
 
         logging.info("Final Base Add Result: " + str(result))
         logging.debug("### END BASE ADD")
