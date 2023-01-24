@@ -64,6 +64,7 @@ class SifrSystem(object):
     def magn(self, d):
         return d if self.neg_sym == d[0] else d[1:]
 
+    """
     def _magn_sort(self, d1, d2, main_no=True):
         '''Sorts the Sifr numbers in order of their magnitude from smallest
         to largest. Does not accept negative numbers, only xcimals'''
@@ -149,6 +150,7 @@ class SifrSystem(object):
                 elif d2_eq:
                     logging.info(d1 + " smaller than " + d2)
                     return d1, d2, False
+    """
 
     def _base_add_alg(self, d1, d2):
         logging.debug("### Base addition algorithm commenced")
@@ -192,11 +194,63 @@ class SifrSystem(object):
                 result = self.incr(d2)[0] + result
             else:
                 result = d2[:-1] + self.incr(d2[-1])[0] + result
+        else:
+            result = d2 + result
 
         logging.info("Final Base Add Result: " + str(result))
         logging.debug("### END BASE ADD")
         return result
 
+    def _base_subt_alg(self, d1, d2):
+        logging.debug("### Base subtraction algorithm commenced")
+        result = ''
+
+        logging.debug("  Subtracting " + d2 + " from " + d1)
+
+        base_digit_range = range(1, len(d1)+1)
+        carry = False
+
+        for digit in base_digit_range:
+            if len(d1) == 0:
+                break
+
+            d1_digit = d1[-1]
+            d1 = d1[:-1]
+
+            # If subtraction goes below base in previous another is subtracted
+            if carry:
+                d1_digit, dig_carry = self._incr_inv(d1_digit)
+                carry = True if dig_carry else False
+
+            if len(d2) != 0:
+                # Adds the digit to be added
+                for dig_seq in self.digit_list:
+                    if dig_seq == d2[-1]:
+                        d2 = d2[:-1]
+                        break
+                    d1_digit, dig_carry = self._incr_inv(d1_digit)
+                    carry = True if dig_carry else carry
+
+            logging.debug("  Result: " + d1_digit)
+            result = d1_digit + result
+            logging.debug("  New digit for step: " + str(result))
+
+        # Adds the first digit of system at start if there's carry at end
+        if carry:
+            if len(d2) == 0:
+                result = self.digit_list[-1] + result
+            elif len(d2) == 1:
+                result = self._incr_inv(d2)[0] + result
+            else:
+                result = d2[:-1] + self._incr_inv(d2[-1])[0] + result
+        else:
+            result = d2 + result
+
+        logging.info("Final Base Subtract Result: " + str(result))
+        logging.debug("### END BASE SUBTRACT")
+        return result
+
+    """
     def _base_neg_alg(self, d1, d2):
         '''Base algorithm to negate two numbers however the largest
         number must go first for simplicity'''
@@ -247,6 +301,7 @@ class SifrSystem(object):
         logging.info("Final Result: " + result)
         logging.debug("### END BASE NEG")
         return result
+        """
 
     def _dec_combine(self, d1, d2, arith_function):
         logging.debug("### START DEC COMBINE")
@@ -254,27 +309,26 @@ class SifrSystem(object):
         # Orders the given Sifr strings
         logging.debug('d1: ' + str(d1) + ' Type: ' + str(type(d1)))
         logging.debug('d2: ' + str(d2) + ' Type: ' + str(type(d2)))
-        sml_no, lg_no, _ = self._magn_sort(d1, d2, True)
 
         # Separates these into main number and xcimal
-        dsml_digits = sml_no.split(sep)
-        dlg_digits = lg_no.split(sep)
+        d1_digits = d1.split(sep)
+        d2_digits = d2.split(sep)
 
         # Assigns identity
         iden = self.digit_list[0]
 
         # Assigns the main number and xcimal from ordered numbers
-        num_lg = dlg_digits[0]
-        if len(dlg_digits) > 1:
-            xcimal_lg = dlg_digits[1]
+        num_lg = d2_digits[0]
+        if len(d2_digits) > 1:
+            xcimal2 = d2_digits[1]
         else:
-            xcimal_lg = iden
+            xcimal2 = iden
 
-        num_sml = dsml_digits[0]
-        if len(dsml_digits) > 1:
-            xcimal_sml = dsml_digits[1]
+        num_sml = d1_digits[0]
+        if len(d1_digits) > 1:
+            xcimal1 = d1_digits[1]
         else:
-            xcimal_sml = iden
+            xcimal1 = iden
 
         # Adds zeroes to main number of smaller at start to align
         for lg_ind in range(1, len(num_lg) + 1):
@@ -282,22 +336,22 @@ class SifrSystem(object):
                 num_sml = iden + num_sml
 
         # Assigns largest xcimal length
-        xcimal_len = max(len(xcimal_sml), len(xcimal_lg))
+        xcimal_len = max(len(xcimal1), len(xcimal2))
 
         # Adds 0s to xcimals to the arithmetic algorithm lines up to
         # right digit
         for xcimal_ind in range(1, xcimal_len + 1):
-            if xcimal_ind > len(xcimal_sml):
-                xcimal_sml += iden
-            if xcimal_ind > len(xcimal_lg):
-                xcimal_lg += iden
+            if xcimal_ind > len(xcimal1):
+                xcimal1 += iden
+            if xcimal_ind > len(xcimal2):
+                xcimal2 += iden
 
         # Create raw number without xcimal point
-        raw_lg = num_lg + xcimal_lg
-        raw_sml = num_sml + xcimal_sml
+        raw2 = num_lg + xcimal2
+        raw1 = num_sml + xcimal1
 
         # Use the described arithmetic function to calculate
-        raw_tot = arith_function(raw_lg, raw_sml)
+        raw_tot = arith_function(raw2, raw1)
 
         arith_answer = ''
 
