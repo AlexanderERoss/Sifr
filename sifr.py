@@ -274,7 +274,7 @@ class SifrSystem(object):
 
         # Assigns identity
         iden = self.digit_list[0]
-        unit = arith_function(iden, self.digit_list[1])
+        unit = arith_function(iden, self.digit_list[1])[0]
 
         # Assigns the main number and xcimal from ordered numbers
         num2 = d2_digits[0]
@@ -310,7 +310,10 @@ class SifrSystem(object):
         else:
             num, carry = arith_function(num1, num2)
 
-        result = num + self.sep_point + xcimal
+        if carry:
+            result = unit + num + self.sep_point + xcimal
+        else:
+            result = num + self.sep_point + xcimal
 
         logging.debug("### END DEC COMBINE")
         return result
@@ -379,3 +382,4 @@ s = SifrSystem()
 a = Sifr('32.461', s)
 b = Sifr('31.2614', s)
 c = Sifr('-31.261', s)
+d = Sifr('92.845',s)
