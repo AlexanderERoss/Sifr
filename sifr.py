@@ -157,7 +157,7 @@ class SifrSystem(object):
 
         Returns: [Added sequence, next digit should be carried]'''
 
-        logging.debug("### Base addition algorithm commenced")
+        logging.debug("### START BASE ADD")
         result = ''
 
         logging.debug("  Adding " + d2 + " to " + d1)
@@ -178,7 +178,7 @@ class SifrSystem(object):
                 carry = True if dig_carry else False
 
             if len(d2) != 0:
-                logging.debug("Add " + d1_digit + " and " + d2[-1])
+                logging.debug("  Add " + d1_digit + " and " + d2[-1])
                 # Adds the digit to be added
                 for dig_seq in self.digit_list:
                     if dig_seq == d2[-1]:
@@ -202,7 +202,7 @@ class SifrSystem(object):
         else:
             result = d2 + result
 
-        logging.info("Final Base Add Result: " + str(result))
+        logging.info("  Final Base Add Result: " + str(result))
         logging.debug("### END BASE ADD")
         return result, carry
 
@@ -212,7 +212,7 @@ class SifrSystem(object):
 
         Returns: [Subtracted sequence, next digit should be carried]'''
 
-        logging.debug("### Base subtraction algorithm commenced")
+        logging.debug("### START BASE SUBTRACT")
         result = ''
 
         logging.debug("  Subtracting " + d2 + " from " + d1)
@@ -244,12 +244,12 @@ class SifrSystem(object):
 
             logging.debug("  Result: " + d1_digit)
             result = d1_digit + result
-            logging.debug("  New digit for step: " + str(result))
+            logging.debug("  New digit for step: " + result)
 
         # Adds the first digit of system at start if there's carry at end
         if carry:
             if len(d2) == 0:
-                result = self.digit_list[-1] + result
+                result = result
             elif len(d2) == 1:
                 result = self._incr_inv(d2)[0] + result
             else:
@@ -257,7 +257,7 @@ class SifrSystem(object):
         else:
             result = d2 + result
 
-        logging.info("Final Base Subtract Result: " + str(result))
+        logging.info("  Final Base Subtract Result: " + result)
         logging.debug("### END BASE SUBTRACT")
         return result, carry
 
@@ -379,7 +379,7 @@ class Sifr(object):
 
 
 s = SifrSystem()
-a = Sifr('32.461', s)
+a = Sifr('32.961', s)
 b = Sifr('31.2614', s)
 c = Sifr('-31.261', s)
-d = Sifr('92.845',s)
+d = Sifr('92.845', s)
