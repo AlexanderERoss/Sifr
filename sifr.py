@@ -64,97 +64,8 @@ class SifrSystem(object):
     def magn(self, d):
         return d if self.neg_sym == d[0] else d[1:]
 
-    """
-    def _magn_sort(self, d1, d2, main_no=True):
-        '''Sorts the Sifr numbers in order of their magnitude from smallest
-        to largest. Does not accept negative numbers, only xcimals'''
-        if main_no:
-            logging.debug("### Magnitude sort started with " +
-                          str(d1) +
-                          " and " +
-                          str(d2))
-        else:
-            logging.debug("### Sub-magnitude sort started with " +
-                          str(d1) + " and " + str(d2))
-
-        d1 = self.magn(d1)
-        d2 = self.magn(d2)
-
-        # Split the numbers on the xcimal point to get both components
-        if self.sep_point in d1:
-            logging.debug("First number has separator")
-            d1_maj, d1_min = d1.split(self.sep_point)
-        else:
-            logging.debug("First number does not have separator")
-            d1_maj = d1
-            d1_min = self.digit_list[0]
-        if self.sep_point in d2:
-            logging.debug("Second number has separator")
-            d2_maj, d2_min = d2.split(self.sep_point)
-        else:
-            logging.debug("Second number does not have separator")
-            d2_maj = d2
-            d2_min = self.digit_list[0]
-
-        # If first number has more digits
-        if len(d1_maj) > len(d2_maj):
-            logging.info("   " + d2 + " smaller than " + d1)
-            return d2, d1, False
-        # If second number has more digits
-        elif len(d1_maj) < len(d2_maj):
-            logging.info(d1 + " smaller than " + d2)
-            return d1, d2, False
-        # If same number of digits cycle through all digits and compare
-        # their sequence in the digit list
-        else:
-            logging.debug("  Main digit is same length so comparing values")
-            for digit in self.digit_list[::-1]:
-                # If there are no digits left of the major number
-                if len(d1_maj) == 0:
-                    if main_no:
-                        # Compare the number after xcimal point
-                        d_min_less, d_min_more, xcmeq = self._magn_sort(d1_min,
-                                                                        d2_min,
-                                                                        False)
-                        # If d2 had the smaller xcimal
-                        if d_min_less == d2_min:
-                            logging.info(d2 + " smaller than " + d1)
-                            return d2, d1, False
-                        # If d1 is smaller xcimal or equal
-                        else:
-                            logging.info(d1 + " smaller than " + d2)
-                            return d1, d2, xcmeq
-                    else:
-                        # Two numbers are completely equal
-                        logging.info(d1 + " smaller than " + d2)
-                        return d1, d2, True
-                # Checks if either number's digit is equal to next highest
-                # in digit list
-                d1_eq = digit == d1[0]
-                d2_eq = digit == d2[0]
-                # If both are equal
-                if d1_eq and d2_eq:
-                    # Recursively check next number sequence
-                    d_less, d_more, _ = self._magn_sort(d1_maj[1:],
-                                                        d2_maj[1:],
-                                                        False)
-                    if d_less == d1_maj[1:]:
-                        logging.info(d1 + " smaller than " + d2)
-                        return d1, d2, False
-                    else:
-                        logging.info(str(d2) + " smaller than " + str(d1))
-                        return d2, d1, False
-                elif d1_eq:
-                    logging.info(str(d2) + " smaller than " + str(d1))
-                    return d2, d1, False
-                elif d2_eq:
-                    logging.info(d1 + " smaller than " + d2)
-                    return d1, d2, False
-    """
-
     def _base_add_alg(self, d1, d2):
         '''Adds two sequences to the length of the maximum digit.
-
         Returns: [Added sequence, next digit should be carried]'''
 
         logging.debug("### START BASE ADD")
@@ -214,7 +125,8 @@ class SifrSystem(object):
 
         logging.debug("### START BASE SUBTRACT")
         result = ''
-
+        print(d1)
+        print(d2)
         logging.debug("  Subtracting " + d2 + " from " + d1)
 
         base_digit_range = range(1, len(d1)+1)
@@ -274,7 +186,8 @@ class SifrSystem(object):
 
         # Assigns identity
         iden = self.digit_list[0]
-        unit = arith_function(iden, self.digit_list[1])[0]
+        unit, _ = self.incr(iden)
+        iden_next, _ = arith_function(iden, unit)
 
         # Assigns the main number and xcimal from ordered numbers
         num2 = d2_digits[0]
@@ -305,18 +218,22 @@ class SifrSystem(object):
 
         if xc_carry:
             num, temp_carry = arith_function(num1, unit)
-            num = num if not temp_carry else unit + num
+            num = num if not temp_carry else iden_next + num
             num, carry = arith_function(num, num2)
         else:
             num, carry = arith_function(num1, num2)
 
-        if carry:
+        if carry and iden_next == unit:
             result = unit + num + self.sep_point + xcimal
+        elif carry:
+            diff_num, _ = arith_function(iden*len(num), num)
+            diff_xcimal, _ = arith_function(iden*len(xcimal), xcimal)
+            result = diff_num + self.sep_point + diff_xcimal
         else:
             result = num + self.sep_point + xcimal
 
         logging.debug("### END DEC COMBINE")
-        return result
+        return result.strip(iden)
 
 
 class Sifr(object):
@@ -341,29 +258,29 @@ class Sifr(object):
         # Assign short names for arithmetic functions
         b_add = self.sifr_system._base_add_alg
         neg_sym = self.sifr_system.neg_sym
+        dec_comb = self.sifr_system._dec_combine
 
         if not self.is_neg and not add_no.is_neg:
             logging.info("  Both numbers are not negative, proceeding to add")
-            return Sifr(self.sifr_system._dec_combine(self.sifr,
-                                                      add_no.sifr,
-                                                      b_add),
-                        self.sifr_system)
+            added = Sifr(self.sifr_system._dec_combine(self.sifr,
+                                                       add_no.sifr,
+                                                       b_add),
+                         self.sifr_system)
         elif self.is_neg and add_no.is_neg:
             logging.info("  Both numbers are negative, proceeding to add")
-            ans = Sifr(neg_sym + self.sifr_system._dec_combine(self.sifr[1:],
-                                                               add_no.sifr[1:],
-                                                               b_add),
-                       self.sifr_system)
-            return ans
+            added = Sifr(neg_sym + dec_comb(self.sifr[1:],
+                                            add_no.sifr[1:],
+                                            b_add),
+                         self.sifr_system)
 
-        b_neg = self.sifr_system._base_subt_alg
-        self_mag = self.sifr if not self.is_neg else self.sifr[1:]
-        add_no_mag = add_no.sifr if not add_no.is_neg else add_no.sifr[1:]
-
-        result = self.sifr_system._dec_combine(self_mag, add_no_mag, b_neg)
+        else:
+            b_neg = self.sifr_system._base_subt_alg
+            self_mag = self.sifr if not self.is_neg else self.sifr[1:]
+            add_no_mag = add_no.sifr if not add_no.is_neg else add_no.sifr[1:]
+            added = self.sifr_system._dec_combine(self_mag, add_no_mag, b_neg)
 
         logging.debug("### MAIN END ADD")
-        return result
+        return added
 
     def __sub__(self, sub_no):
         logging.debug("### MAIN START SUB")
