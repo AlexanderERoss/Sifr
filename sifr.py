@@ -125,8 +125,6 @@ class SifrSystem(object):
 
         logging.debug("### START BASE SUBTRACT")
         result = ''
-        print(d1)
-        print(d2)
         logging.debug("  Subtracting " + d2 + " from " + d1)
 
         base_digit_range = range(1, len(d1)+1)
@@ -216,6 +214,8 @@ class SifrSystem(object):
         # Use the described arithmetic function to calculate
         xcimal, xc_carry = arith_function(xcimal1, xcimal2)
 
+        zero_cross = False
+
         if xc_carry:
             num, temp_carry = arith_function(num1, unit)
             num = num if not temp_carry else iden_next + num
@@ -227,13 +227,15 @@ class SifrSystem(object):
             result = unit + num + self.sep_point + xcimal
         elif carry:
             diff_num, _ = arith_function(iden*len(num), num)
+            diff_num, _ = arith_function(diff_num, unit)
             diff_xcimal, _ = arith_function(iden*len(xcimal), xcimal)
             result = diff_num + self.sep_point + diff_xcimal
+            zero_cross = True
         else:
             result = num + self.sep_point + xcimal
 
         logging.debug("### END DEC COMBINE")
-        return result.strip(iden)
+        return result.strip(iden), zero_cross
 
 
 class Sifr(object):
@@ -260,39 +262,52 @@ class Sifr(object):
         neg_sym = self.sifr_system.neg_sym
         dec_comb = self.sifr_system._dec_combine
 
+        # Two positive numbers to add
         if not self.is_neg and not add_no.is_neg:
             logging.info("  Both numbers are not negative, proceeding to add")
-            added = Sifr(self.sifr_system._dec_combine(self.sifr,
-                                                       add_no.sifr,
-                                                       b_add),
-                         self.sifr_system)
+            added, _ = dec_comb(self.sifr,
+                                add_no.sifr,
+                                b_add)
+            result = Sifr(added, self.sifr_system)
+
+        # Two negative numbers to "add"
         elif self.is_neg and add_no.is_neg:
             logging.info("  Both numbers are negative, proceeding to add")
-            added = Sifr(neg_sym + dec_comb(self.sifr[1:],
-                                            add_no.sifr[1:],
-                                            b_add),
-                         self.sifr_system)
+            added, _ = dec_comb(self.sifr[1:], add_no.sifr[1:], b_add)
+            result = Sifr(neg_sym + added,
+                          self.sifr_system)
 
+        # Negative and positive to counteract
         else:
             b_neg = self.sifr_system._base_subt_alg
             self_mag = self.sifr if not self.is_neg else self.sifr[1:]
             add_no_mag = add_no.sifr if not add_no.is_neg else add_no.sifr[1:]
-            added = self.sifr_system._dec_combine(self_mag, add_no_mag, b_neg)
+            added, zero_crossed = dec_comb(self_mag, add_no_mag, b_neg)
+            if self.is_neg and zero_crossed:
+                result = Sifr(added, self.sifr_system)
+            elif self.is_neg and not zero_crossed:
+                result = Sifr(neg_sym + added, self.sifr_system)
+            elif not self.is_neg and zero_crossed:
+                result = Sifr(neg_sym + added, self.sifr_system)
+            elif not self.is_neg and not zero_crossed:
+                result = Sifr(added, self.sifr_system)
 
         logging.debug("### MAIN END ADD")
-        return added
+        return result
 
     def __sub__(self, sub_no):
         logging.debug("### MAIN START SUB")
         # If subtracted number is negative just add
         if sub_no.sifr[0] == self.sifr_system.sep_point:
             logging.debug("### MAIN END SUB")
-            return self.__add__(Sifr(sub_no.sifr[1:], self.sifr_system))
+            subtracted = self.__add__(Sifr(sub_no.sifr[1:], self.sifr_system))
         # Otherwise just add the negative
         else:
             logging.debug("### MAIN END SUB")
-            return self.__add__(Sifr(self.sifr_system.neg_sym + sub_no.sifr,
-                                     self.sifr_system))
+            subtracted = self.__add__(Sifr(self.sifr_system.neg_sym
+                                           + sub_no.sifr,
+                                           self.sifr_system))
+        return subtracted
 
 
 s = SifrSystem()
