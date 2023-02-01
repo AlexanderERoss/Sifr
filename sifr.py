@@ -11,7 +11,7 @@
 import logging
 
 # DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 class SifrSystem(object):
@@ -237,6 +237,16 @@ class SifrSystem(object):
         logging.debug("### END DEC COMBINE")
         return result.strip(iden), zero_cross
 
+    def _normalize_result(self, raw_ans):
+        just_neg_and_point = raw_ans == (self.neg_sym + self.sep_point)
+        just_point = raw_ans == self.sep_point
+        if just_neg_and_point or just_point:
+            norm_ans = self.digit_list[0] + self.sep_point + self.digit_list[0]
+        else:
+            norm_ans = raw_ans
+        return norm_ans.replace(self.neg_sym + self.digit_list[0],
+                                self.digit_list[0])
+
 
 class Sifr(object):
     '''A number type that takes a string representing the character
@@ -261,6 +271,7 @@ class Sifr(object):
         b_add = self.sifr_system._base_add_alg
         neg_sym = self.sifr_system.neg_sym
         dec_comb = self.sifr_system._dec_combine
+        norm = self.sifr_system._normalize_result
 
         # Two positive numbers to add
         if not self.is_neg and not add_no.is_neg:
@@ -268,13 +279,13 @@ class Sifr(object):
             added, _ = dec_comb(self.sifr,
                                 add_no.sifr,
                                 b_add)
-            result = Sifr(added, self.sifr_system)
+            result = Sifr(norm(added), self.sifr_system)
 
         # Two negative numbers to "add"
         elif self.is_neg and add_no.is_neg:
             logging.info("  Both numbers are negative, proceeding to add")
             added, _ = dec_comb(self.sifr[1:], add_no.sifr[1:], b_add)
-            result = Sifr(neg_sym + added,
+            result = Sifr(norm(neg_sym + added),
                           self.sifr_system)
 
         # Negative and positive to counteract
@@ -284,30 +295,32 @@ class Sifr(object):
             add_no_mag = add_no.sifr if not add_no.is_neg else add_no.sifr[1:]
             added, zero_crossed = dec_comb(self_mag, add_no_mag, b_neg)
             if self.is_neg and zero_crossed:
-                result = Sifr(added, self.sifr_system)
+                result = Sifr(norm(added), self.sifr_system)
             elif self.is_neg and not zero_crossed:
-                result = Sifr(neg_sym + added, self.sifr_system)
+                result = Sifr(norm(neg_sym + added), self.sifr_system)
             elif not self.is_neg and zero_crossed:
                 result = Sifr(neg_sym + added, self.sifr_system)
             elif not self.is_neg and not zero_crossed:
-                result = Sifr(added, self.sifr_system)
+                result = Sifr(norm(added), self.sifr_system)
 
         logging.debug("### MAIN END ADD")
         return result
 
     def __sub__(self, sub_no):
         logging.debug("### MAIN START SUB")
+        norm = self.sifr_system._normalize_result
         # If subtracted number is negative just add
-        if sub_no.sifr[0] == self.sifr_system.sep_point:
+        if sub_no.sifr[0] == self.sifr_system.neg_sym:
             logging.debug("### MAIN END SUB")
-            subtracted = self.__add__(Sifr(sub_no.sifr[1:], self.sifr_system))
+            result = self.__add__(Sifr(sub_no.sifr[1:], self.sifr_system))
         # Otherwise just add the negative
         else:
             logging.debug("### MAIN END SUB")
-            subtracted = self.__add__(Sifr(self.sifr_system.neg_sym
-                                           + sub_no.sifr,
-                                           self.sifr_system))
-        return subtracted
+            result = self.__add__(Sifr(norm(self.sifr_system.neg_sym
+                                            + sub_no.sifr),
+                                       self.sifr_system))
+        result = self.sifr_system._normalize_result(result)
+        return result
 
 
 s = SifrSystem()
