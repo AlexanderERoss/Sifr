@@ -331,7 +331,6 @@ class Sifr(object):
             result = self.__add__(Sifr(norm(self.sifr_system.neg_sym
                                             + sub_no.sifr),
                                        self.sifr_system))
-        result = self.sifr_system._normalize_result(result)
         return result
 
 
