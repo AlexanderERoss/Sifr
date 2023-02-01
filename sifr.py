@@ -11,7 +11,16 @@
 import logging
 
 # DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
-logging.basicConfig(level=logging.INFO)
+log_level = logging.DEBUG
+logging.basicConfig(level=log_level)
+
+
+def mask_logging(func):
+    def wrapper(a, b, c, d, *args):
+        logging.basicConfig(level=logging.ERROR)
+        func(a, b, c, d)
+        logging.basicConfig(level=log_level)
+    return wrapper
 
 
 class SifrSystem(object):
@@ -237,15 +246,53 @@ class SifrSystem(object):
         logging.debug("### END DEC COMBINE")
         return result.strip(iden), zero_cross
 
-    def _normalize_result(self, raw_ans):
+    @mask_logging
+    def knuth_up(self, d1, d2, algo):
+        ''' algo is add for multipy'''
+
+        iden = self.digit_list[0]
+        result = '0.0'
+
+        # Loop through each xcimal to apply 'algo' that number of times
+        iden_count = 0
+        for d1_dig in d1[::-1]:
+            for dig in self.digit_list:
+                if dig == dig:
+                    break
+                result = algo(result + iden*iden_count, d2)
+            iden_count += 1
+
+    def _base_mul(self, d1, d2):
+        iden = self.digit_list[0]
+
+        d1_parts = d1.split(self.sep_point)
+        d1_num = d1_parts[0]
+        d1_xcimal = iden if len(d1_parts) == 0 else d1_parts[1]
+
+        ans_num = self.knuth_up(d1_num, d2, self._base_add_alg)
+        ans_xcimal = self.knuth_up(d1_xcimal, d2, self._base_add_alg)
+
+        multpd, _ = self._dec_combine(ans_num,
+                                      ans_xcimal[:-len(d1_xcimal)] +
+                                      self.sep_point +
+                                      ans_xcimal[-len(d1_xcimal):],
+                                      self._base_add_alg)
+
+        return multpd
+
+    def _norm_ans(self, raw_ans: str):
         just_neg_and_point = raw_ans == (self.neg_sym + self.sep_point)
         just_point = raw_ans == self.sep_point
         if just_neg_and_point or just_point:
             norm_ans = self.digit_list[0] + self.sep_point + self.digit_list[0]
         else:
             norm_ans = raw_ans
-        return norm_ans.replace(self.neg_sym + self.digit_list[0],
-                                self.digit_list[0])
+        norm_ans = norm_ans.replace(self.neg_sym + self.digit_list[0],
+                                    self.digit_list[0])
+        if norm_ans[-1] == self.sep_point:
+            norm_ans = norm_ans + self.digit_list[0]
+
+        return norm_ans
 
 
 class Sifr(object):
@@ -253,7 +300,7 @@ class Sifr(object):
     and the number system represented as the class SifrSystem'''
     def __init__(self, sifr: str, sifr_system: SifrSystem):
         self.sifr = sifr
-        self.sifr_system = sifr_system
+        self.ssys = sifr_system
         self.no_digits = len(sifr)
         self.is_neg = sifr[0] == sifr_system.neg_sym
         self.magnitude = sifr if sifr_system.neg_sym != sifr[0] else sifr[1:]
@@ -263,74 +310,79 @@ class Sifr(object):
 
     def __neg__(self):
         if self.is_neg:
-            return Sifr(self.sifr[1:], self.sifr_system)
+            return Sifr(self.sifr[1:], self.ssys)
         else:
-            norm = self.sifr_system._normalize_result
-            return Sifr(norm(self.sifr_system.neg_sym + self.sifr),
-                        self.sifr_system)
+            norm = self.ssys._norm_ans
+            return Sifr(norm(self.ssys.neg_sym + self.sifr),
+                        self.ssys)
 
     def __pos__(self):
-        norm = self.sifr_system._normalize_result
-        return Sifr(norm(self.sifr), self.sifr_system)
+        norm = self.ssys._norm_ans
+        return Sifr(norm(self.sifr), self.ssys)
 
     def __add__(self, add_no):
         logging.debug("### START MAIN ADD")
-        if self.sifr_system != add_no.sifr_system:
+        if self.ssys != add_no.sifr_system:
             raise Exception("Sifr Systems do not match and thus ",
                             "can't be added together")
 
         # Assign short names for arithmetic functions
-        b_add = self.sifr_system._base_add_alg
-        neg_sym = self.sifr_system.neg_sym
-        dec_comb = self.sifr_system._dec_combine
-        norm = self.sifr_system._normalize_result
+        b_add = self.ssys._base_add_alg
+        neg_sym = self.ssys.neg_sym
+        dec_comb = self.ssys._dec_combine
+        norm = self.ssys._norm_ans
 
         # Two positive numbers to add
         if not self.is_neg and not add_no.is_neg:
             logging.info("  Both numbers are not negative, proceeding to add")
-            added, _ = dec_comb(self.sifr,
-                                add_no.sifr,
-                                b_add)
-            result = Sifr(norm(added), self.sifr_system)
+            added, _ = dec_comb(self.sifr, add_no.sifr, b_add)
+            result = Sifr(norm(added), self.ssys)
 
         # Two negative numbers to "add"
         elif self.is_neg and add_no.is_neg:
             logging.info("  Both numbers are negative, proceeding to add")
             added, _ = dec_comb(self.sifr[1:], add_no.sifr[1:], b_add)
-            result = Sifr(norm(neg_sym + added),
-                          self.sifr_system)
+            result = Sifr(norm(neg_sym + added), self.ssys)
 
         # Negative and positive to counteract
         else:
-            b_neg = self.sifr_system._base_subt_alg
+            b_neg = self.ssys._base_subt_alg
             self_mag = self.sifr if not self.is_neg else self.sifr[1:]
             add_no_mag = add_no.sifr if not add_no.is_neg else add_no.sifr[1:]
             added, zero_crossed = dec_comb(self_mag, add_no_mag, b_neg)
             if self.is_neg and zero_crossed:
-                result = Sifr(norm(added), self.sifr_system)
+                result = Sifr(norm(added), self.ssys)
             elif self.is_neg and not zero_crossed:
-                result = Sifr(norm(neg_sym + added), self.sifr_system)
+                result = Sifr(norm(neg_sym + added), self.ssys)
             elif not self.is_neg and zero_crossed:
-                result = Sifr(neg_sym + added, self.sifr_system)
+                result = Sifr(neg_sym + added, self.ssys)
             elif not self.is_neg and not zero_crossed:
-                result = Sifr(norm(added), self.sifr_system)
+                result = Sifr(norm(added), self.ssys)
 
         logging.debug("### MAIN END ADD")
         return result
 
     def __sub__(self, sub_no):
         logging.debug("### MAIN START SUB")
-        norm = self.sifr_system._normalize_result
+        norm = self.ssys._norm_ans
         # If subtracted number is negative just add
-        if sub_no.sifr[0] == self.sifr_system.neg_sym:
+        if sub_no.sifr[0] == self.ssys.neg_sym:
             logging.debug("### MAIN END SUB")
-            result = self.__add__(Sifr(sub_no.sifr[1:], self.sifr_system))
+            result = self.__add__(Sifr(sub_no.sifr[1:], self.ssys))
         # Otherwise just add the negative
         else:
             logging.debug("### MAIN END SUB")
-            result = self.__add__(Sifr(norm(self.sifr_system.neg_sym
-                                            + sub_no.sifr),
-                                       self.sifr_system))
+            result = self.__add__(Sifr(norm(self.ssys.neg_sym + sub_no.sifr),
+                                       self.ssys))
+        return result
+
+    def __mul__(self, mul_no):
+        raw_result = self.ssys._base_mul(self.sifr, mul_no)
+        if (self.is_neg and mul_no.is_neg) or (not self.is_neg
+                                               and not mul_no.is_neg):
+            result = self.ssys._norm_ans(raw_result)
+        else:
+            result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
         return result
 
 
