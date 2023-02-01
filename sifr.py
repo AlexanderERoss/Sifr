@@ -261,6 +261,18 @@ class Sifr(object):
     def __repr__(self):
         return self.sifr
 
+    def __neg__(self):
+        if self.is_neg:
+            return Sifr(self.sifr[1:], self.sifr_system)
+        else:
+            norm = self.sifr_system._normalize_result
+            return Sifr(norm(self.sifr_system.neg_sym + self.sifr),
+                        self.sifr_system)
+
+    def __pos__(self):
+        norm = self.sifr_system._normalize_result
+        return Sifr(norm(self.sifr), self.sifr_system)
+
     def __add__(self, add_no):
         logging.debug("### START MAIN ADD")
         if self.sifr_system != add_no.sifr_system:
