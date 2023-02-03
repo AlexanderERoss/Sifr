@@ -16,9 +16,9 @@ logging.basicConfig(level=log_level)
 
 
 def mask_logging(func):
-    def wrapper(a, b, c, d, *args):
+    def wrapper(a, b, c, d, e, *args):
         logging.basicConfig(level=logging.ERROR)
-        func(a, b, c, d)
+        func(a, b, c, d, e)
         logging.basicConfig(level=log_level)
     return wrapper
 
@@ -247,20 +247,21 @@ class SifrSystem(object):
         return result.strip(iden), zero_cross
 
     @mask_logging
-    def knuth_up(self, d1, d2, algo):
-        ''' algo is add for multipy'''
+    def knuth_up(self, d1, d2, algo, iden):
+        ''' algo is add for multiply'''
 
-        iden = self.digit_list[0]
-        result = '0.0'
+        result = iden
 
         # Loop through each xcimal to apply 'algo' that number of times
         iden_count = 0
         for d1_dig in d1[::-1]:
             for dig in self.digit_list:
-                if dig == dig:
+                if dig == d1_dig:
                     break
-                result = algo(result + iden*iden_count, d2)
+                result, _ = algo(result + iden*iden_count, d2)
             iden_count += 1
+
+        return result
 
     def _base_mul(self, d1, d2):
         iden = self.digit_list[0]
@@ -269,8 +270,17 @@ class SifrSystem(object):
         d1_num = d1_parts[0]
         d1_xcimal = iden if len(d1_parts) == 0 else d1_parts[1]
 
-        ans_num = self.knuth_up(d1_num, d2, self._base_add_alg)
-        ans_xcimal = self.knuth_up(d1_xcimal, d2, self._base_add_alg)
+        def full_add(x, y):
+            return self._dec_combine(x, y, self._base_add_alg)
+
+        ans_num = self.knuth_up(d1_num,
+                                d2,
+                                full_add,
+                                iden)
+        ans_xcimal = self.knuth_up(d1_xcimal,
+                                   d2,
+                                   full_add,
+                                   iden)
 
         multpd, _ = self._dec_combine(ans_num,
                                       ans_xcimal[:-len(d1_xcimal)] +
@@ -322,7 +332,7 @@ class Sifr(object):
 
     def __add__(self, add_no):
         logging.debug("### START MAIN ADD")
-        if self.ssys != add_no.sifr_system:
+        if self.ssys != add_no.ssys:
             raise Exception("Sifr Systems do not match and thus ",
                             "can't be added together")
 
@@ -377,7 +387,7 @@ class Sifr(object):
         return result
 
     def __mul__(self, mul_no):
-        raw_result = self.ssys._base_mul(self.sifr, mul_no)
+        raw_result = self.ssys._base_mul(self.sifr, mul_no.sifr)
         if (self.is_neg and mul_no.is_neg) or (not self.is_neg
                                                and not mul_no.is_neg):
             result = self.ssys._norm_ans(raw_result)
