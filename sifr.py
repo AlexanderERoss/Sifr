@@ -271,7 +271,7 @@ class SifrSystem(object):
 
     @mask_logging
     def knuth_up(self, d1, d2, algo, iden):
-        ''' algo is add for multiply'''
+        ''' algo is add for multiply '''
 
         result = iden
 
@@ -323,10 +323,22 @@ class SifrSystem(object):
                                    iden)
         logging.debug("Answer xcimal: " + ans_xcimal)
 
+        # Update ans xcimal with right xcimal point
+        ans_xc_split = ans_xcimal.split(self.sep_point)
+        ans_xc_num = ans_xc_split[0]
+        ans_xc_xcimal = iden if len(ans_xc_split) == 1 else ans_xc_split[1]
+
+        xc_reduce = len(d1_xcimal)
+        if xc_reduce >= len(ans_xc_num):
+            ans_xc_fin = (iden + self.sep_point
+                          + iden*(xc_reduce - len(ans_xc_num))
+                          + ans_xc_xcimal)
+        else:
+            ans_xc_fin = (ans_xc_num[:-xc_reduce] + self.sep_point
+                          + ans_xc_num[-xc_reduce:] + ans_xc_xcimal)
+
         multpd, _ = self._dec_combine(ans_num,
-                                      ans_xcimal[:-len(d1_xcimal)] +
-                                      self.sep_point +
-                                      ans_xcimal[-len(d1_xcimal):],
+                                      ans_xc_fin,
                                       self._base_add_alg)
         logging.debug("### END BASE MULT")
         return multpd
