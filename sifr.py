@@ -9,6 +9,10 @@
 # #############################################################################
 
 import logging
+import pdb
+
+# Make breakpoint shorter
+bp = pdb.set_trace
 
 # DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
 log_level = logging.DEBUG
@@ -16,10 +20,11 @@ logging.basicConfig(level=log_level)
 
 
 def mask_logging(func):
-    def wrapper(a, b, c, d, e, *args):
-        logging.basicConfig(level=logging.ERROR)
-        func(a, b, c, d, e)
-        logging.basicConfig(level=log_level)
+    def wrapper(*args):
+        logging.getLogger().setLevel(logging.ERROR)
+        result = func(*args)
+        logging.getLogger().setLevel(log_level)
+        return result
     return wrapper
 
 
@@ -183,7 +188,7 @@ class SifrSystem(object):
     def _dec_combine(self, d1, d2, arith_function):
         logging.debug("### START DEC COMBINE")
         sep = self.sep_point
-        # Orders the given Sifr strings
+
         logging.debug(' d1: ' + str(d1) + ' Type: ' + str(type(d1)))
         logging.debug(' d2: ' + str(d2) + ' Type: ' + str(type(d2)))
 
@@ -246,6 +251,24 @@ class SifrSystem(object):
         logging.debug("### END DEC COMBINE")
         return result.strip(iden), zero_cross
 
+    def _raise_by_base(self, d, exp):
+        ''' Makes each digit in a number 'exp' bases higher for the digit (d).
+        Doesn't accept negative numbers '''
+        sep = self.sep_point
+        if exp == 0:
+            result = d
+        elif exp == 1:
+            if sep in d and d[-1] != sep:
+                d_split = d.split(sep)
+                d_num = d_split[0]
+                d_xcimal = d_split[1]
+                result = d_num + d_xcimal[0] + sep + d_xcimal[1:]
+            else:
+                result = d.replace(sep, '') + self.digit_list[0]
+        else:
+            result = self._raise_by_base(self._raise_by_base(d, 1), exp - 1)
+        return result
+
     @mask_logging
     def knuth_up(self, d1, d2, algo, iden):
         ''' algo is add for multiply'''
@@ -253,41 +276,59 @@ class SifrSystem(object):
         result = iden
 
         # Loop through each xcimal to apply 'algo' that number of times
-        iden_count = 0
-        for d1_dig in d1[::-1]:
+        fig_count = 0
+        for d2_dig in d2[::-1]:
+            print("dig to multiply: " + d2_dig)
             for dig in self.digit_list:
-                if dig == d1_dig:
+                if dig == d2_dig:
                     break
-                result, _ = algo(result + iden*iden_count, d2)
-            iden_count += 1
+                print("       " + self._raise_by_base(d1, fig_count))
+                result, _ = algo(result, self._raise_by_base(d1, fig_count))
+                print("  Result updated: " + result)
+            fig_count += 1
 
         return result
 
     def _base_mul(self, d1, d2):
+        '''Multiplies two numbers together by repeatedly adding
+        ignoring negative signs (only provide magnitude)'''
+
+        logging.debug("### START BASE MULT")
         iden = self.digit_list[0]
+
+        logging.debug(' d1: ' + str(d1) + ' Type: ' + str(type(d1)))
+        logging.debug(' d2: ' + str(d2) + ' Type: ' + str(type(d2)))
 
         d1_parts = d1.split(self.sep_point)
         d1_num = d1_parts[0]
         d1_xcimal = iden if len(d1_parts) == 0 else d1_parts[1]
 
+        logging.debug("d1_num :" + d1_num)
+        logging.debug("d1_xcimal: " + d1_xcimal)
+
         def full_add(x, y):
             return self._dec_combine(x, y, self._base_add_alg)
 
-        ans_num = self.knuth_up(d1_num,
-                                d2,
+        logging.debug("Multiplying " + d2 + " by " + d1_num)
+        ans_num = self.knuth_up(d2,
+                                d1_num,
                                 full_add,
                                 iden)
-        ans_xcimal = self.knuth_up(d1_xcimal,
-                                   d2,
+        logging.debug("Answer main number: " + ans_num)
+
+        logging.debug("Multiplying " + d2 + " by " + d1_num)
+        ans_xcimal = self.knuth_up(d2,
+                                   d1_xcimal,
                                    full_add,
                                    iden)
+        logging.debug("Answer xcimal: " + ans_xcimal)
 
         multpd, _ = self._dec_combine(ans_num,
                                       ans_xcimal[:-len(d1_xcimal)] +
                                       self.sep_point +
                                       ans_xcimal[-len(d1_xcimal):],
                                       self._base_add_alg)
-
+        logging.debug("### END BASE MULT")
         return multpd
 
     def _norm_ans(self, raw_ans: str):
@@ -387,12 +428,14 @@ class Sifr(object):
         return result
 
     def __mul__(self, mul_no):
+        logging.debug("### START MAIN MULT")
         raw_result = self.ssys._base_mul(self.sifr, mul_no.sifr)
         if (self.is_neg and mul_no.is_neg) or (not self.is_neg
                                                and not mul_no.is_neg):
             result = self.ssys._norm_ans(raw_result)
         else:
             result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
+        logging.debug("### END MAIN MULT")
         return result
 
 
@@ -401,3 +444,8 @@ a = Sifr('32.961', s)
 b = Sifr('31.2614', s)
 c = Sifr('-31.261', s)
 d = Sifr('92.845', s)
+
+ad = 32.961
+bd = 31.2614
+cd = -31.261
+dd = 92.845
