@@ -366,7 +366,7 @@ class Sifr(object):
         self.ssys = sifr_system
         self.no_digits = len(sifr)
         self.is_neg = sifr[0] == sifr_system.neg_sym
-        self.magnitude = sifr if sifr_system.neg_sym != sifr[0] else sifr[1:]
+        self.magn = sifr if sifr_system.neg_sym != sifr[0] else sifr[1:]
 
     def __repr__(self):
         return self.sifr
@@ -441,7 +441,7 @@ class Sifr(object):
 
     def __mul__(self, mul_no):
         logging.debug("### START MAIN MULT")
-        raw_result = self.ssys._base_mul(self.sifr, mul_no.sifr)
+        raw_result = self.ssys._base_mul(self.magn, mul_no.magn)
         if (self.is_neg and mul_no.is_neg) or (not self.is_neg
                                                and not mul_no.is_neg):
             result = self.ssys._norm_ans(raw_result)
