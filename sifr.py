@@ -5,7 +5,7 @@
 # Sifr is the main script which calculates the main arithmetic of the
 # generalised number system.
 # It's purpose is not efficiency, but rather to break down mathematical
-# processes to its component functions.
+# processes to its component functions and generalizability
 # #############################################################################
 
 import logging
@@ -75,8 +75,14 @@ class SifrSystem(object):
         carry = True
         return self.digit_list[-1], carry
 
-    def magn(self, d):
-        return d if self.neg_sym == d[0] else d[1:]
+    def _dec_split(self, d):
+        ''' Splits a decimal (non-negative) into it's consituent parts'''
+        iden = self.digit_list[0]
+        d_parts = d.split(self.sep_point)
+        d_num = d_parts[0]
+        d_xcimal = iden if len(d_parts) == 0 else d_parts[1]
+
+        return d_num, d_xcimal
 
     def _base_add_alg(self, d1, d2):
         '''Adds two sequences to the length of the maximum digit.
@@ -187,14 +193,9 @@ class SifrSystem(object):
 
     def _dec_combine(self, d1, d2, arith_function):
         logging.debug("### START DEC COMBINE")
-        sep = self.sep_point
 
         logging.debug(' d1: ' + str(d1) + ' Type: ' + str(type(d1)))
         logging.debug(' d2: ' + str(d2) + ' Type: ' + str(type(d2)))
-
-        # Separates these into main number and xcimal
-        d1_digits = d1.split(sep)
-        d2_digits = d2.split(sep)
 
         # Assigns identity
         iden = self.digit_list[0]
@@ -202,17 +203,8 @@ class SifrSystem(object):
         iden_next, _ = arith_function(iden, unit)
 
         # Assigns the main number and xcimal from ordered numbers
-        num2 = d2_digits[0]
-        if len(d2_digits) > 1:
-            xcimal2 = d2_digits[1]
-        else:
-            xcimal2 = iden
-
-        num1 = d1_digits[0]
-        if len(d1_digits) > 1:
-            xcimal1 = d1_digits[1]
-        else:
-            xcimal1 = iden
+        num1, xcimal1 = self._dec_split(d1)
+        num2, xcimal2 = self._dec_split(d2)
 
         # Assigns largest xcimal length
         xcimal_len = max(len(xcimal1), len(xcimal2))
@@ -259,9 +251,7 @@ class SifrSystem(object):
             result = d
         elif exp == 1:
             if sep in d and d[-1] != sep:
-                d_split = d.split(sep)
-                d_num = d_split[0]
-                d_xcimal = d_split[1]
+                d_num, d_xcimal = self._split_dec(d)
                 result = d_num + d_xcimal[0] + sep + d_xcimal[1:]
             else:
                 result = d.replace(sep, '') + self.digit_list[0]
@@ -269,7 +259,6 @@ class SifrSystem(object):
             result = self._raise_by_base(self._raise_by_base(d, 1), exp - 1)
         return result
 
-    @mask_logging
     def knuth_up(self, d1, d2, algo, iden):
         ''' algo is add for multiply '''
 
@@ -299,13 +288,12 @@ class SifrSystem(object):
         logging.debug(' d1: ' + str(d1) + ' Type: ' + str(type(d1)))
         logging.debug(' d2: ' + str(d2) + ' Type: ' + str(type(d2)))
 
-        d1_parts = d1.split(self.sep_point)
-        d1_num = d1_parts[0]
-        d1_xcimal = iden if len(d1_parts) == 0 else d1_parts[1]
+        d1_num, d1_xcimal = self._dec_split(d1)
 
         logging.debug("d1_num :" + d1_num)
         logging.debug("d1_xcimal: " + d1_xcimal)
 
+        @mask_logging
         def full_add(x, y):
             return self._dec_combine(x, y, self._base_add_alg)
 
@@ -324,9 +312,7 @@ class SifrSystem(object):
         logging.debug("Answer xcimal: " + ans_xcimal)
 
         # Update ans xcimal with right xcimal point
-        ans_xc_split = ans_xcimal.split(self.sep_point)
-        ans_xc_num = ans_xc_split[0]
-        ans_xc_xcimal = iden if len(ans_xc_split) == 1 else ans_xc_split[1]
+        ans_xc_num, ans_xc_xcimal = self._dec_split(ans_xcimal)
 
         xc_reduce = len(d1_xcimal)
         if xc_reduce >= len(ans_xc_num):
@@ -342,6 +328,77 @@ class SifrSystem(object):
                                       self._base_add_alg)
         logging.debug("### END BASE MULT")
         return multpd
+
+    def _base_div(self, prod, quot):
+        logging.debug("### START BASE DIV")
+        logging.debug("### END BASE DIV")
+        return divd
+
+    def _num_compare(self, d1, d2):
+        ''' Compare digits magnitude, without xcimal separator
+        Always starts with first digit, to be used for numbers with same
+        lengths or not necessarily equal xcimals. '''
+
+        if len(d1) > len(d2):
+            longer_no = 'd1'
+        elif len(d1) == len(d2):
+            longer_no = 'equal'
+        else:
+            longer_no = 'd2'
+
+        for dig_ind in range(min(len(d1), len(d2))):
+            equal = False
+            for dig in self.digit_list[::-1]:
+                if d1[dig_ind] == dig and d2[dig_ind] == dig:
+                    equal = True
+                    to_break = False
+                    break
+                elif d1[dig_ind] == dig:
+                    greater = True
+                    equal = False
+                    to_break = True
+                    break
+                elif d2[dig_ind] == dig:
+                    greater = False
+                    equal = False
+                    to_break = True
+                    break
+                else:
+                    to_break = False
+
+            if to_break:
+                break
+
+        # Return result of equal or d1 greater than d2
+        if equal:
+            if longer_no == 'd1':
+                equal = False
+                greater = True
+            elif longer_no == 'd2':
+                equal = False
+                greater = False
+            elif longer_no == 'equal':
+                equal = True
+                greater = False
+
+        return greater, equal
+
+    def _orderer(self, d1, d2):
+        d1_num, d1_xcimal = self._dec_split(d1)
+        d2_num, d2_xcimal = self._dec_split(d2)
+
+        if len(d1_num) > len(d2_num):
+            greater = True
+            equal = False
+        elif len(d1_num) < len(d2_num):
+            greater = False
+            equal = False
+        else:
+            greater, equal = self._num_compare(d1_num, d2_num)
+            if equal:
+                greater, equal = self._num_compare(d1_xcimal, d2_xcimal)
+
+        return greater, equal
 
     def _norm_ans(self, raw_ans: str):
         just_neg_and_point = raw_ans == (self.neg_sym + self.sep_point)
@@ -366,10 +423,12 @@ class Sifr(object):
         self.ssys = sifr_system
         self.no_digits = len(sifr)
         self.is_neg = sifr[0] == sifr_system.neg_sym
-        self.magn = sifr if sifr_system.neg_sym != sifr[0] else sifr[1:]
 
     def __repr__(self):
         return self.sifr
+
+    def __abs__(self):
+        return sifr if sifr_system.neg_sym != sifr[0] else sifr[1:]        
 
     def __neg__(self):
         if self.is_neg:
@@ -441,7 +500,7 @@ class Sifr(object):
 
     def __mul__(self, mul_no):
         logging.debug("### START MAIN MULT")
-        raw_result = self.ssys._base_mul(self.magn, mul_no.magn)
+        raw_result = self.ssys._base_mul(self.__abs__(), mul_no.__abs__())
         if (self.is_neg and mul_no.is_neg) or (not self.is_neg
                                                and not mul_no.is_neg):
             result = self.ssys._norm_ans(raw_result)
@@ -449,6 +508,52 @@ class Sifr(object):
             result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
         logging.debug("### END MAIN MULT")
         return result
+
+    def __floordiv__(self, div_no):
+        logging.debug("### START FLOOR DIV")
+        raw_result = self.ssys._base_div(self.__abs__(), div_no.__abs__())
+        if (self.is_neg and div_no.is_neg) or (not self.is_neg
+                                               and not div_no.is_neg):
+            result = self.ssys._norm_ans(raw_result)
+        else:
+            result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
+        logging.debug("### END FLOOR DIV")
+        return result
+
+    def __mod__(self, div_no):
+        logging.debug("### START MAIN MOD")
+        raw_result = self.ssys._base_div(self.__abs__(), div_no.__abs__())
+        if (self.is_neg and div_no.is_neg) or (not self.is_neg
+                                               and not div_no.is_neg):
+            result = self.ssys._norm_ans(raw_result)
+        else:
+            result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
+        logging.debug("### END MAIN MOD")
+        return result
+
+    def __truediv__(self, div_no):
+        logging.debug("### START MAIN DIV")
+        raw_result = self.ssys._base_div(self.__abs__(), div_no.__abs__())
+        if (self.is_neg and div_no.is_neg) or (not self.is_neg
+                                               and not div_no.is_neg):
+            result = self.ssys._norm_ans(raw_result)
+        else:
+            result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
+        logging.debug("### END MAIN DIV")
+        return result
+
+    def __gt__(self, d):
+        if not self.is_neg and not d.is_neg:
+            greater, equal = self.ssys._orderer(self.sifr, d.sifr)
+        elif self.is_neg and d.is_neg:
+            not_greater, _ = self.ssys._orderer(self.sifr.__abs__(),
+                                                d.sifr.__abs__())
+            greater = not not_greater
+        elif self.is_neg and not d.is_neg:
+            greater = False
+        elif not self.is_neg and d.is_neg:
+            greater = True
+        return greater
 
 
 s = SifrSystem()
