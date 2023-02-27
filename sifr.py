@@ -80,7 +80,7 @@ class SifrSystem(object):
         iden = self.digit_list[0]
         d_parts = d.split(self.sep_point)
         d_num = d_parts[0]
-        d_xcimal = iden if len(d_parts) == 0 else d_parts[1]
+        d_xcimal = iden if len(d_parts) == 1 else d_parts[1]
 
         return d_num, d_xcimal
 
@@ -91,6 +91,7 @@ class SifrSystem(object):
         logging.debug("### START BASE ADD")
         result = ''
 
+        d1, d2 = self._pad_iden(d1, d2, end=False)
         logging.debug("  Adding " + d2 + " to " + d1)
 
         base_digit_range = range(1, len(d1)+1)
@@ -122,20 +123,46 @@ class SifrSystem(object):
             result = d1_digit + result
             logging.debug("  New digit for step: " + str(result))
 
-        # Adds the first digit of system at start if there's carry at end
-        if carry:
-            if len(d2) == 0:
-                result = result
-            elif len(d2) == 1:
-                result = self.incr(d2)[0] + result
-            else:
-                result = d2[:-1] + self.incr(d2[-1])[0] + result
-        else:
-            result = d2 + result
-
         logging.info("  Final Base Add Result: " + str(result))
         logging.debug("### END BASE ADD")
         return result, carry
+
+    def _from_iden_sub(self, d):
+        ''' Subtracts the digit from a set of zeroes, used for
+        when zero is crossed and looking to change the numbers '''
+        logging.debug("# Number to zero sub: " + d)
+        result = ''
+        rev_dig_list = self.digit_list[0] + self.digit_list[1:][::-1]
+        for dig in d:
+            ind = 0
+            counts = self.digit_list
+            for count in counts:
+                if dig == count:
+                    break
+                ind += 1
+            result += rev_dig_list[ind]
+        logging.debug("# Zero subbed number: " + result)
+        return result
+
+    def _pad_iden(self, d1, d2, end=True):
+        ''' Adds addition identity characters to digits (at end-True or
+        start-False) to the arithmetic algorithm lines up to right digit '''
+        iden = self.digit_list[0]
+        max_len = max(len(d1), len(d2))
+        d1_padded = d1
+        d2_padded = d2
+        for ind in range(1, max_len + 1):
+            if end:
+                if ind > len(d1):
+                    d1_padded += iden
+                if ind > len(d2):
+                    d2_padded += iden
+            elif not end:
+                if ind > len(d1):
+                    d1_padded = iden + d1_padded
+                if ind > len(d2):
+                    d2_padded = iden + d2_padded
+        return d1_padded, d2_padded
 
     def _base_subt_alg(self, d1, d2):
         '''Subtracts the second sequence of digits from the first for
@@ -145,6 +172,7 @@ class SifrSystem(object):
 
         logging.debug("### START BASE SUBTRACT")
         result = ''
+        d1, d2 = self._pad_iden(d1, d2, end=False)
         logging.debug("  Subtracting " + d2 + " from " + d1)
 
         base_digit_range = range(1, len(d1)+1)
@@ -157,11 +185,12 @@ class SifrSystem(object):
             d1_digit = d1[-1]
             d1 = d1[:-1]
 
-            # If subtraction goes below base in previous another is subtracted
+            # If subtraction goes below base unit is subtracted
             if carry:
                 d1_digit, dig_carry = self._incr_inv(d1_digit)
                 carry = True if dig_carry else False
 
+            # Subtract d2 digit if there are digits left
             if len(d2) != 0:
                 logging.debug("Subtract " + d2[-1] + " from " + d1_digit)
                 # Adds the digit to be added
@@ -175,17 +204,6 @@ class SifrSystem(object):
             logging.debug("  Result: " + d1_digit)
             result = d1_digit + result
             logging.debug("  New digit for step: " + result)
-
-        # Adds the first digit of system at start if there's carry at end
-        if carry:
-            if len(d2) == 0:
-                result = result
-            elif len(d2) == 1:
-                result = self._incr_inv(d2)[0] + result
-            else:
-                result = d2[:-1] + self._incr_inv(d2[-1])[0] + result
-        else:
-            result = d2 + result
 
         logging.info("  Final Base Subtract Result: " + result)
         logging.debug("### END BASE SUBTRACT")
@@ -203,19 +221,12 @@ class SifrSystem(object):
         iden_next, _ = arith_function(iden, unit)
 
         # Assigns the main number and xcimal from ordered numbers
+
         num1, xcimal1 = self._dec_split(d1)
         num2, xcimal2 = self._dec_split(d2)
 
-        # Assigns largest xcimal length
-        xcimal_len = max(len(xcimal1), len(xcimal2))
-
-        # Adds 0s to xcimals to the arithmetic algorithm lines up to
-        # right digit
-        for xcimal_ind in range(1, xcimal_len + 1):
-            if xcimal_ind > len(xcimal1):
-                xcimal1 += iden
-            if xcimal_ind > len(xcimal2):
-                xcimal2 += iden
+        # Pads arithmetic identity to end to make equal length
+        xcimal1, xcimal2 = self._pad_iden(xcimal1, xcimal2)
 
         # Use the described arithmetic function to calculate
         xcimal, xc_carry = arith_function(xcimal1, xcimal2)
@@ -251,7 +262,7 @@ class SifrSystem(object):
             result = d
         elif exp == 1:
             if sep in d and d[-1] != sep:
-                d_num, d_xcimal = self._split_dec(d)
+                d_num, d_xcimal = self._dec_split(d)
                 result = d_num + d_xcimal[0] + sep + d_xcimal[1:]
             else:
                 result = d.replace(sep, '') + self.digit_list[0]
@@ -298,10 +309,7 @@ class SifrSystem(object):
             return self._dec_combine(x, y, self._base_add_alg)
 
         logging.debug("Multiplying " + d2 + " by " + d1_num)
-        ans_num = self.knuth_up(d2,
-                                d1_num,
-                                full_add,
-                                iden)
+        ans_num = self.knuth_up(d2, d1_num, full_add, iden)
         logging.debug("Answer main number: " + ans_num)
 
         logging.debug("Multiplying " + d2 + " by " + d1_num)
@@ -424,24 +432,32 @@ class Sifr(object):
         self.no_digits = len(sifr)
         self.is_neg = sifr[0] == sifr_system.neg_sym
 
+    # REPRESENTATIONAL DUNDERS
     def __repr__(self):
         return self.sifr
 
+    # UNARY MAGNITUDE OPERATOR DUNDERS
     def __abs__(self):
-        return sifr if sifr_system.neg_sym != sifr[0] else sifr[1:]        
+        if self.ssys.neg_sym != self.sifr[0]:
+            result = Sifr(self.sifr, self.ssys)
+        else:
+            result = Sifr(self.sifr[1:], self.ssys)
+        return result
 
     def __neg__(self):
         if self.is_neg:
-            return Sifr(self.sifr[1:], self.ssys)
+            result = Sifr(self.sifr[1:], self.ssys)
         else:
             norm = self.ssys._norm_ans
-            return Sifr(norm(self.ssys.neg_sym + self.sifr),
-                        self.ssys)
+            result = Sifr(norm(self.ssys.neg_sym + self.sifr),
+                          self.ssys)
+        return result
 
     def __pos__(self):
         norm = self.ssys._norm_ans
         return Sifr(norm(self.sifr), self.ssys)
 
+    # ARITHMETIC DUNDERS
     def __add__(self, add_no):
         logging.debug("### START MAIN ADD")
         if self.ssys != add_no.ssys:
@@ -500,14 +516,15 @@ class Sifr(object):
 
     def __mul__(self, mul_no):
         logging.debug("### START MAIN MULT")
-        raw_result = self.ssys._base_mul(self.__abs__(), mul_no.__abs__())
+        raw_result = self.ssys._base_mul(self.__abs__().sifr,
+                                         mul_no.__abs__().sifr)
         if (self.is_neg and mul_no.is_neg) or (not self.is_neg
                                                and not mul_no.is_neg):
             result = self.ssys._norm_ans(raw_result)
         else:
             result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
         logging.debug("### END MAIN MULT")
-        return result
+        return Sifr(result, self.ssys)
 
     def __floordiv__(self, div_no):
         logging.debug("### START FLOOR DIV")
@@ -542,9 +559,22 @@ class Sifr(object):
         logging.debug("### END MAIN DIV")
         return result
 
+    # RELATIONAL DUNDERS
+    def __eq__(self, d):
+        if not self.is_neg and not d.is_neg:
+            _, equal = self.ssys._orderer(self.sifr, d.sifr)
+        elif self.is_neg and d.is_neg:
+            _, equal = self.ssys._orderer(self.sifr.__abs__(),
+                                          d.sifr.__abs__())
+        elif self.is_neg and not d.is_neg:
+            equal = False
+        elif not self.is_neg and d.is_neg:
+            equal = False
+        return equal
+
     def __gt__(self, d):
         if not self.is_neg and not d.is_neg:
-            greater, equal = self.ssys._orderer(self.sifr, d.sifr)
+            greater, _ = self.ssys._orderer(self.sifr, d.sifr)
         elif self.is_neg and d.is_neg:
             not_greater, _ = self.ssys._orderer(self.sifr.__abs__(),
                                                 d.sifr.__abs__())
@@ -555,14 +585,59 @@ class Sifr(object):
             greater = True
         return greater
 
+    def __lt__(self, d):
+        if not self.is_neg and not d.is_neg:
+            greater, equal = self.ssys._orderer(self.sifr, d.sifr)
+        elif self.is_neg and d.is_neg:
+            not_greater, equal = self.ssys._orderer(self.sifr.__abs__(),
+                                                    d.sifr.__abs__())
+            greater = not not_greater
+        elif self.is_neg and not d.is_neg:
+            greater = False
+            equal = False
+        elif not self.is_neg and d.is_neg:
+            greater = True
+            equal = False
+        return not greater and not equal
+
+    def __ge__(self, d):
+        if not self.is_neg and not d.is_neg:
+            greater, equal = self.ssys._orderer(self.sifr, d.sifr)
+        elif self.is_neg and d.is_neg:
+            not_greater, equal = self.ssys._orderer(self.__abs__().sifr,
+                                                    d.__abs__().sifr)
+            greater = not not_greater
+        elif self.is_neg and not d.is_neg:
+            greater = False
+            equal = False
+        elif not self.is_neg and d.is_neg:
+            greater = True
+            equal = False
+        return greater or equal
+
+    def __le__(self, d):
+        if not self.is_neg and not d.is_neg:
+            greater, equal = self.ssys._orderer(self.sifr, d.sifr)
+        elif self.is_neg and d.is_neg:
+            not_greater, equal = self.ssys._orderer(self.sifr.__abs__(),
+                                                    d.sifr.__abs__())
+            greater = not not_greater
+        elif self.is_neg and not d.is_neg:
+            greater = False
+            equal = False
+        elif not self.is_neg and d.is_neg:
+            greater = True
+            equal = False
+        return not greater or equal
+
 
 s = SifrSystem()
 a = Sifr('32.961', s)
 b = Sifr('31.2614', s)
 c = Sifr('-31.261', s)
-d = Sifr('92.845', s)
+d = Sifr('2192.845', s)
 
 ad = 32.961
 bd = 31.2614
 cd = -31.261
-dd = 92.845
+dd = 2192.845
