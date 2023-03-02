@@ -21,15 +21,17 @@ logging.basicConfig(level=log_level)
 
 def mask_logging(func):
     def wrapper(*args):
+        prev_log_level = logging.root.level
         logging.getLogger().setLevel(logging.ERROR)
         result = func(*args)
-        logging.getLogger().setLevel(log_level)
+        logging.getLogger().setLevel(prev_log_level)
         return result
     return wrapper
 
 
 class SifrSystem(object):
-    def __init__(self, digit_list='0123456789', sep_point='.', neg_sym='-'):
+    def __init__(self, digit_list='0123456789', sep_point='.', neg_sym='-',
+                 xcimal_places=40):
         unique_digits = len(set(digit_list)) != len(digit_list)
         sep_not_in_digits = sep_point not in digit_list
         neg_not_in_digits = neg_sym not in digit_list
@@ -39,6 +41,8 @@ class SifrSystem(object):
         self.digit_list = digit_list
         self.sep_point = sep_point
         self.neg_sym = neg_sym
+        self.xcimal_places = xcimal_places
+
         self.base_no = len(self.digit_list)
         logging.debug("SifrSystem instantiated with characters: " +
                       str(digit_list) +
@@ -278,13 +282,10 @@ class SifrSystem(object):
         # Loop through each xcimal to apply 'algo' that number of times
         fig_count = 0
         for d2_dig in d2[::-1]:
-            print("dig to multiply: " + d2_dig)
             for dig in self.digit_list:
                 if dig == d2_dig:
                     break
-                print("       " + self._raise_by_base(d1, fig_count))
                 result, _ = algo(result, self._raise_by_base(d1, fig_count))
-                print("  Result updated: " + result)
             fig_count += 1
 
         return result
@@ -337,10 +338,64 @@ class SifrSystem(object):
         logging.debug("### END BASE MULT")
         return multpd
 
-    def _base_div(self, prod, quot):
+    def _times_in_num(self, numer, denom):
+        logging.debug("    ##### Begin times in num count")
+        logging.debug("     ##### Dividing " + numer + " by " + denom)
+        iden = self.digit_list[0]
+        unit = self.digit_list[1]
+        prod = iden
+        quot = iden
+
+        @mask_logging
+        def full_add(x, y):
+            result = self._dec_combine(x, y, self._base_add_alg)
+            return result[0]
+
+        @mask_logging
+        def full_subt(x, y):
+            result = self._dec_combine(x, y, self._base_subt_alg)
+            return result[0]
+
+        while True:
+            logging.debug("      ##### Running quot: " + quot)
+            logging.debug("      ##### Running tally: " + prod)
+            new_prod = full_add(prod, denom)
+            new_quot = full_add(quot, unit)
+            if any(self._orderer(new_prod, numer)):
+                break
+            prod = new_prod
+            quot = new_quot
+        logging.debug("     ##### Final quotient: " + quot)
+        logging.debug("     ##### Final product: " + prod)
+        modulus = full_subt(numer, prod)
+        logging.debug("     ##### Remainder: " + prod)
+        logging.debug("    ##### End times in num count")
+        return quot.split(self.sep_point)[0], modulus
+
+    def _base_div(self, numer, denom):
+        iden = self.digit_list[0]
         logging.debug("### START BASE DIV")
+
+        @mask_logging
+        def lil_div(num, den):
+            return self._times_in_num(num, den)
+
+        mod_zero = False
+        xcim_count = 1
+        first_div, modls = lil_div(numer, denom)
+        divd = first_div + self.sep_point
+        logging.debug("  Main number: " + divd)
+
+        while not mod_zero and xcim_count <= self.xcimal_places:
+            m_quot, modls = lil_div(self._raise_by_base(modls, 1), denom)
+            mod_zero = self._orderer(modls, iden)[1]
+            xcim_count += 1
+            divd += m_quot
+            logging.debug("   Modulus: " + modls)
+            logging.debug("   Extra xcimal: " + m_quot
+                          + " Xcimal count: " + str(xcim_count))
         logging.debug("### END BASE DIV")
-        return divd
+        return self._norm_ans(divd)
 
     def _num_compare(self, d1, d2):
         ''' Compare digits magnitude, without xcimal separator
@@ -422,6 +477,9 @@ class SifrSystem(object):
 
         return norm_ans
 
+# As a general rule the signing of the Sifr is dealt with within the dunder
+# method, all other items (xcimal points, recursion for operation etc.) are
+# calculated in the SifrSystem object.
 
 class Sifr(object):
     '''A number type that takes a string representing the character
@@ -528,36 +586,39 @@ class Sifr(object):
 
     def __floordiv__(self, div_no):
         logging.debug("### START FLOOR DIV")
-        raw_result = self.ssys._base_div(self.__abs__(), div_no.__abs__())
+        raw_result = self.ssys._times_in_num(self.__abs__().sifr,
+                                             div_no.__abs__().sifr)[0]
         if (self.is_neg and div_no.is_neg) or (not self.is_neg
                                                and not div_no.is_neg):
             result = self.ssys._norm_ans(raw_result)
         else:
             result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
         logging.debug("### END FLOOR DIV")
-        return result
+        return Sifr(result, self.ssys)
 
     def __mod__(self, div_no):
         logging.debug("### START MAIN MOD")
-        raw_result = self.ssys._base_div(self.__abs__(), div_no.__abs__())
+        raw_result = self.ssys._times_in_num(self.__abs__().sifr,
+                                             div_no.__abs__().sifr)[1]
         if (self.is_neg and div_no.is_neg) or (not self.is_neg
                                                and not div_no.is_neg):
             result = self.ssys._norm_ans(raw_result)
         else:
             result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
         logging.debug("### END MAIN MOD")
-        return result
+        return Sifr(result, self.ssys)
 
     def __truediv__(self, div_no):
         logging.debug("### START MAIN DIV")
-        raw_result = self.ssys._base_div(self.__abs__(), div_no.__abs__())
+        raw_result = self.ssys._base_div(self.__abs__().sifr,
+                                         div_no.__abs__().sifr)
         if (self.is_neg and div_no.is_neg) or (not self.is_neg
                                                and not div_no.is_neg):
             result = self.ssys._norm_ans(raw_result)
         else:
             result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
         logging.debug("### END MAIN DIV")
-        return result
+        return Sifr(result, self.ssys)
 
     # RELATIONAL DUNDERS
     def __eq__(self, d):
