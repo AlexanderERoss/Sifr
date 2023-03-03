@@ -40,23 +40,29 @@ class Sifr(object):
 
     # UNARY MAGNITUDE OPERATOR DUNDERS
     def __abs__(self):
+        logging.debug("### START MAIN MAGNITUDE")
         if self.ssys.neg_sym != self.sifr[0]:
             result = Sifr(self.sifr, self.ssys)
         else:
             result = Sifr(self.sifr[1:], self.ssys)
+        logging.debug("### END MAIN MAGNITUDE")
         return result
 
     def __neg__(self):
+        logging.debug("### START MAIN NEGATION")
         if self.is_neg:
             result = Sifr(self.sifr[1:], self.ssys)
         else:
             norm = self.ssys._norm_ans
             result = Sifr(norm(self.ssys.neg_sym + self.sifr),
                           self.ssys)
+        logging.debug("### END MAIN NEGATION")
         return result
 
     def __pos__(self):
+        logging.debug("### START MAIN POSITIVE")
         norm = self.ssys._norm_ans
+        logging.debug("### END MAIN POSITIVE")
         return Sifr(norm(self.sifr), self.ssys)
 
     # ARITHMETIC DUNDERS
@@ -99,7 +105,7 @@ class Sifr(object):
             elif not self.is_neg and not zero_crossed:
                 result = Sifr(norm(added), self.ssys)
 
-        logging.debug("### MAIN END ADD")
+        logging.debug("### END MAIN ADD")
         return result
 
     def __sub__(self, sub_no):
@@ -107,11 +113,11 @@ class Sifr(object):
         norm = self.ssys._norm_ans
         # If subtracted number is negative just add
         if sub_no.sifr[0] == self.ssys.neg_sym:
-            logging.debug("### MAIN END SUB")
+            logging.debug("### END MAIN SUB")
             result = self.__add__(Sifr(sub_no.sifr[1:], self.ssys))
         # Otherwise just add the negative
         else:
-            logging.debug("### MAIN END SUB")
+            logging.debug("### END MAIN SUB")
             result = self.__add__(Sifr(norm(self.ssys.neg_sym + sub_no.sifr),
                                        self.ssys))
         return result
@@ -166,6 +172,7 @@ class Sifr(object):
 
     # RELATIONAL DUNDERS
     def __eq__(self, d):
+        logging.debug("### START MAIN EQUAL")
         if not self.is_neg and not d.is_neg:
             _, equal = self.ssys._orderer(self.sifr, d.sifr)
         elif self.is_neg and d.is_neg:
@@ -178,6 +185,7 @@ class Sifr(object):
         return equal
 
     def __gt__(self, d):
+        logging.debug("### START MAIN GREATER THAN")
         if not self.is_neg and not d.is_neg:
             greater, _ = self.ssys._orderer(self.sifr, d.sifr)
         elif self.is_neg and d.is_neg:
@@ -191,6 +199,7 @@ class Sifr(object):
         return greater
 
     def __lt__(self, d):
+        logging.debug("### START MAIN LESS THAN")
         if not self.is_neg and not d.is_neg:
             greater, equal = self.ssys._orderer(self.sifr, d.sifr)
         elif self.is_neg and d.is_neg:
@@ -206,6 +215,7 @@ class Sifr(object):
         return not greater and not equal
 
     def __ge__(self, d):
+        logging.debug("### START MAIN GREATER THAN OR EQUAL TO")
         if not self.is_neg and not d.is_neg:
             greater, equal = self.ssys._orderer(self.sifr, d.sifr)
         elif self.is_neg and d.is_neg:
@@ -221,6 +231,7 @@ class Sifr(object):
         return greater or equal
 
     def __le__(self, d):
+        logging.debug("### START MAIN LESS THAN OR EQUAL TO")
         if not self.is_neg and not d.is_neg:
             greater, equal = self.ssys._orderer(self.sifr, d.sifr)
         elif self.is_neg and d.is_neg:
@@ -236,7 +247,7 @@ class Sifr(object):
         return not greater or equal
 
 
-s = SifrSystem()
+s = SifrSystem(xcimal_places=10)
 a = Sifr('32.961', s)
 b = Sifr('31.2614', s)
 c = Sifr('-31.261', s)

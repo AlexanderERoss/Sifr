@@ -13,7 +13,7 @@ import pdb
 bp = pdb.set_trace
 
 # DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
-log_level = logging.DEBUG
+log_level = logging.ERROR
 logging.basicConfig(level=log_level)
 
 # DECORATORS
@@ -95,11 +95,11 @@ class SifrSystem(object):
         '''Adds two sequences to the length of the maximum digit.
         Returns: [Added sequence, next digit should be carried]'''
 
-        logging.debug("### START BASE ADD")
+        logging.debug("  ### START BASE ADD")
         result = ''
 
         d1, d2 = self._pad_iden(d1, d2, end=False)
-        logging.debug("  Adding " + d2 + " to " + d1)
+        logging.debug("   Adding " + d2 + " to " + d1)
 
         base_digit_range = range(1, len(d1)+1)
         carry = False
@@ -117,7 +117,7 @@ class SifrSystem(object):
                 carry = True if dig_carry else False
 
             if len(d2) != 0:
-                logging.debug("  Add " + d1_digit + " and " + d2[-1])
+                logging.debug("   Add " + d1_digit + " and " + d2[-1])
                 # Adds the digit to be added
                 for dig_seq in self.digit_list:
                     if dig_seq == d2[-1]:
@@ -126,18 +126,18 @@ class SifrSystem(object):
                     d1_digit, dig_carry = self.incr(d1_digit)
                     carry = True if dig_carry else carry
 
-            logging.debug("  Result: " + d1_digit)
+            logging.debug("   Result: " + d1_digit)
             result = d1_digit + result
-            logging.debug("  New digit for step: " + str(result))
+            logging.debug("   New digit for step: " + str(result))
 
-        logging.info("  Final Base Add Result: " + str(result))
-        logging.debug("### END BASE ADD")
+        logging.info("   Final Base Add Result: " + str(result))
+        logging.debug("  ### END BASE ADD")
         return result, carry
 
     def _from_iden_sub(self, d):
         ''' Subtracts the digit from a set of zeroes, used for
         when zero is crossed and looking to change the numbers '''
-        logging.debug("# Number to zero sub: " + d)
+        logging.debug("   # Number to zero sub: " + d)
         result = ''
         rev_dig_list = self.digit_list[0] + self.digit_list[1:][::-1]
         for dig in d:
@@ -148,7 +148,7 @@ class SifrSystem(object):
                     break
                 ind += 1
             result += rev_dig_list[ind]
-        logging.debug("# Zero subbed number: " + result)
+        logging.debug("   # Zero subbed number: " + result)
         return result
 
     def _pad_iden(self, d1, d2, end=True):
@@ -177,10 +177,10 @@ class SifrSystem(object):
 
         Returns: [Subtracted sequence, next digit should be carried]'''
 
-        logging.debug("### START BASE SUBTRACT")
+        logging.debug("  ### START BASE SUBTRACT")
         result = ''
         d1, d2 = self._pad_iden(d1, d2, end=False)
-        logging.debug("  Subtracting " + d2 + " from " + d1)
+        logging.debug("   Subtracting " + d2 + " from " + d1)
 
         base_digit_range = range(1, len(d1)+1)
         carry = False
@@ -199,7 +199,7 @@ class SifrSystem(object):
 
             # Subtract d2 digit if there are digits left
             if len(d2) != 0:
-                logging.debug("Subtract " + d2[-1] + " from " + d1_digit)
+                logging.debug("   Subtract " + d2[-1] + " from " + d1_digit)
                 # Adds the digit to be added
                 for dig_seq in self.digit_list:
                     if dig_seq == d2[-1]:
@@ -208,16 +208,16 @@ class SifrSystem(object):
                     d1_digit, dig_carry = self._incr_inv(d1_digit)
                     carry = True if dig_carry else carry
 
-            logging.debug("  Result: " + d1_digit)
+            logging.debug("   Result: " + d1_digit)
             result = d1_digit + result
-            logging.debug("  New digit for step: " + result)
+            logging.debug("   New digit for step: " + result)
 
-        logging.info("  Final Base Subtract Result: " + result)
-        logging.debug("### END BASE SUBTRACT")
+        logging.info("   Final Base Subtract Result: " + result)
+        logging.debug("  ### END BASE SUBTRACT")
         return result, carry
 
     def _dec_combine(self, d1, d2, arith_function):
-        logging.debug("### START DEC COMBINE")
+        logging.debug(" ### START DEC COMBINE")
 
         logging.debug(' d1: ' + str(d1) + ' Type: ' + str(type(d1)))
         logging.debug(' d2: ' + str(d2) + ' Type: ' + str(type(d2)))
@@ -258,7 +258,7 @@ class SifrSystem(object):
         else:
             result = num + self.sep_point + xcimal
 
-        logging.debug("### END DEC COMBINE")
+        logging.debug(" ### END DEC COMBINE")
         return result.strip(iden), zero_cross
 
     def _raise_by_base(self, d, exp):
@@ -297,7 +297,7 @@ class SifrSystem(object):
         '''Multiplies two numbers together by repeatedly adding
         ignoring negative signs (only provide magnitude)'''
 
-        logging.debug("### START BASE MULT")
+        logging.debug(" ### START BASE MULT")
         iden = self.digit_list[0]
 
         logging.debug(' d1: ' + str(d1) + ' Type: ' + str(type(d1)))
@@ -305,23 +305,23 @@ class SifrSystem(object):
 
         d1_num, d1_xcimal = self._dec_split(d1)
 
-        logging.debug("d1_num :" + d1_num)
-        logging.debug("d1_xcimal: " + d1_xcimal)
+        logging.debug("  d1_num :" + d1_num)
+        logging.debug("  d1_xcimal: " + d1_xcimal)
 
         @mask_logging
         def full_add(x, y):
             return self._dec_combine(x, y, self._base_add_alg)
 
-        logging.debug("Multiplying " + d2 + " by " + d1_num)
+        logging.debug("  Multiplying " + d2 + " by " + d1_num)
         ans_num = self.knuth_up(d2, d1_num, full_add, iden)
-        logging.debug("Answer main number: " + ans_num)
+        logging.debug("  Answer main number: " + ans_num)
 
-        logging.debug("Multiplying " + d2 + " by " + d1_num)
+        logging.debug("  Multiplying " + d2 + " by " + d1_num)
         ans_xcimal = self.knuth_up(d2,
                                    d1_xcimal,
                                    full_add,
                                    iden)
-        logging.debug("Answer xcimal: " + ans_xcimal)
+        logging.debug("  Answer xcimal: " + ans_xcimal)
 
         # Update ans xcimal with right xcimal point
         ans_xc_num, ans_xc_xcimal = self._dec_split(ans_xcimal)
@@ -338,7 +338,7 @@ class SifrSystem(object):
         multpd, _ = self._dec_combine(ans_num,
                                       ans_xc_fin,
                                       self._base_add_alg)
-        logging.debug("### END BASE MULT")
+        logging.debug(" ### END BASE MULT")
         return multpd
 
     def _times_in_num(self, numer, denom):
@@ -377,7 +377,7 @@ class SifrSystem(object):
 
     def _base_div(self, numer, denom):
         iden = self.digit_list[0]
-        logging.debug("### START BASE DIV")
+        logging.debug(" ### START BASE DIV")
 
         @mask_logging
         def lil_div(num, den):
@@ -397,7 +397,7 @@ class SifrSystem(object):
             logging.debug("   Modulus: " + modls)
             logging.debug("   Extra xcimal: " + m_quot
                           + " Xcimal count: " + str(xcim_count))
-        logging.debug("### END BASE DIV")
+        logging.debug(" ### END BASE DIV")
         return self._norm_ans(divd)
 
     def _num_compare(self, d1, d2):
@@ -405,6 +405,7 @@ class SifrSystem(object):
         Always starts with first digit, to be used for numbers with same
         lengths or not necessarily equal xcimals. '''
 
+        logging.debug("  ### START NUM COMPARE")
         if len(d1) > len(d2):
             longer_no = 'd1'
         elif len(d1) == len(d2):
@@ -446,10 +447,11 @@ class SifrSystem(object):
             elif longer_no == 'equal':
                 equal = True
                 greater = False
-
+        logging.debug("  ### END NUM COMPARE")
         return greater, equal
 
     def _orderer(self, d1, d2):
+        logging.debug(" ### START ORDERER")
         d1_num, d1_xcimal = self._dec_split(d1)
         d2_num, d2_xcimal = self._dec_split(d2)
 
@@ -463,7 +465,7 @@ class SifrSystem(object):
             greater, equal = self._num_compare(d1_num, d2_num)
             if equal:
                 greater, equal = self._num_compare(d1_xcimal, d2_xcimal)
-
+        logging.debug(" ### END ORDERER")
         return greater, equal
 
     def _norm_ans(self, raw_ans: str):
@@ -477,5 +479,5 @@ class SifrSystem(object):
                                     self.digit_list[0])
         if norm_ans[-1] == self.sep_point:
             norm_ans = norm_ans + self.digit_list[0]
-
+        logging.debug("  ### NORMALIZED ANSWER")
         return norm_ans
