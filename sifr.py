@@ -140,11 +140,13 @@ class Sifr(object):
                                              div_no.__abs__().sifr)[0]
         if (self.is_neg and div_no.is_neg) or (not self.is_neg
                                                and not div_no.is_neg):
-            result = self.ssys._norm_ans(raw_result)
+            result = Sifr(self.ssys._norm_ans(raw_result), self.ssys)
         else:
-            result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
+            result = Sifr(self.ssys._norm_ans(self.ssys.neg_sym + raw_result),
+                          self.ssys)
+            result = result - Sifr(self.ssys.digit_list[1], self.ssys)
         logging.debug("### END FLOOR DIV")
-        return Sifr(result, self.ssys)
+        return result
 
     def __mod__(self, div_no):
         logging.debug("### START MAIN MOD")
@@ -152,11 +154,16 @@ class Sifr(object):
                                              div_no.__abs__().sifr)[1]
         if (self.is_neg and div_no.is_neg) or (not self.is_neg
                                                and not div_no.is_neg):
-            result = self.ssys._norm_ans(raw_result)
+            result = Sifr(self.ssys._norm_ans(raw_result),
+                          self.ssys)
         else:
-            result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
+            result = Sifr(self.ssys._norm_ans(self.ssys.neg_sym + raw_result),
+                          self.ssys)
+            # Mod for negatives should be from the whole factor below
+            # hence the magnitude calc needs to be reverted
+            result = div_no - result
         logging.debug("### END MAIN MOD")
-        return Sifr(result, self.ssys)
+        return result
 
     def __truediv__(self, div_no):
         logging.debug("### START MAIN DIV")

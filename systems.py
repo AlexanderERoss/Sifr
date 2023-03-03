@@ -477,6 +477,8 @@ class SifrSystem(object):
             norm_ans = raw_ans
         norm_ans = norm_ans.replace(self.neg_sym + self.digit_list[0],
                                     self.digit_list[0])
+        # Intentionally chosen to always have a zero to indicate that this
+        # type is always capable of behaving as a float.
         if norm_ans[-1] == self.sep_point:
             norm_ans = norm_ans + self.digit_list[0]
         logging.debug("  ### NORMALIZED ANSWER")
