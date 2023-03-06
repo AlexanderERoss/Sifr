@@ -178,6 +178,18 @@ class Sifr(object):
         logging.debug("### END MAIN DIV")
         return Sifr(result, self.ssys)
 
+    def __pow__(self, exp):
+        logging.debug("### START MAIN EXPONENTIATION")
+        raw_result = self.ssys._int_exp(self.__abs__().sifr,
+                                        exp.__abs__().sifr)
+        if (self.is_neg and exp.is_neg) or (not self.is_neg
+                                            and not exp.is_neg):
+            result = self.ssys._norm_ans(raw_result)
+        else:
+            result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
+        logging.debug("### END MAIN EXPONENTIATION")
+        return Sifr(result, self.ssys)
+
     # RELATIONAL DUNDERS
     def __eq__(self, d):
         logging.debug("### START MAIN EQUAL")
@@ -259,7 +271,7 @@ s = SifrSystem(xcimal_places=10)
 a = Sifr('32.961', s)
 b = Sifr('31.2614', s)
 c = Sifr('-31.261', s)
-d = Sifr('2192.845', s)
+pd = Sifr('2192.845', s)
 
 ad = 32.961
 bd = 31.2614

@@ -400,6 +400,22 @@ class SifrSystem(object):
         logging.debug(" ### END BASE DIV")
         return self._norm_ans(divd)
 
+    def _int_exp(self, base, exp):
+        a_iden = self.digit_list[0]
+        m_iden = self.digit_list[1]
+        exp_num, exp_xcim = self._dec_split(exp)
+        if self._orderer(exp_xcim, a_iden)[1]:
+            raise Exception("Exponentiation only implemented for integers " +
+                            "at this point")
+        base_num, base_xcim = self._dec_split(self)
+
+        @mask_logging
+        def full_mult(x, y):
+            return self._base_mul(x, y)
+
+        return self.knuth_up(base, exp, full_mult, m_iden)
+
+
     def _num_compare(self, d1, d2):
         ''' Compare digits magnitude, without xcimal separator
         Always starts with first digit, to be used for numbers with same
