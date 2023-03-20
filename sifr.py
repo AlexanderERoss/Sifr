@@ -202,6 +202,7 @@ class Sifr(object):
             equal = False
         elif not self.is_neg and d.is_neg:
             equal = False
+        logging.debug("### END MAIN EQUAL")
         return equal
 
     def __gt__(self, d):
@@ -216,6 +217,7 @@ class Sifr(object):
             greater = False
         elif not self.is_neg and d.is_neg:
             greater = True
+        logging.debug("### END MAIN GREATER THAN")
         return greater
 
     def __lt__(self, d):
@@ -232,6 +234,7 @@ class Sifr(object):
         elif not self.is_neg and d.is_neg:
             greater = True
             equal = False
+        logging.debug("### END MAIN LESS THAN")
         return not greater and not equal
 
     def __ge__(self, d):
@@ -248,6 +251,7 @@ class Sifr(object):
         elif not self.is_neg and d.is_neg:
             greater = True
             equal = False
+        logging.debug("### END MAIN GREATER THAN OR EQUAL TO")
         return greater or equal
 
     def __le__(self, d):
@@ -264,6 +268,7 @@ class Sifr(object):
         elif not self.is_neg and d.is_neg:
             greater = True
             equal = False
+        logging.debug("### END MAIN LESS THAN OR EQUAL TO")
         return not greater or equal
 
 
@@ -271,7 +276,8 @@ s = SifrSystem(xcimal_places=10)
 a = Sifr('32.961', s)
 b = Sifr('31.2614', s)
 c = Sifr('-31.261', s)
-pd = Sifr('2192.845', s)
+d = Sifr('2192.845', s)
+i = Sifr('5', s)
 
 ad = 32.961
 bd = 31.2614

@@ -278,7 +278,7 @@ class SifrSystem(object):
         return result
 
     def knuth_up(self, d1, d2, algo, iden):
-        ''' algo is add for multiply '''
+        '''algo is add for multiply, and algo is multiply for exponentiation'''
 
         result = iden
 
@@ -288,9 +288,10 @@ class SifrSystem(object):
             for dig in self.digit_list:
                 if dig == d2_dig:
                     break
-                result, _ = algo(result, self._raise_by_base(d1, fig_count))
+                print(result)
+                print(self._raise_by_base(d1, fig_count))
+                result = algo(result, self._raise_by_base(d1, fig_count))
             fig_count += 1
-
         return result
 
     def _base_mul(self, d1, d2):
@@ -310,7 +311,7 @@ class SifrSystem(object):
 
         @mask_logging
         def full_add(x, y):
-            return self._dec_combine(x, y, self._base_add_alg)
+            return self._dec_combine(x, y, self._base_add_alg)[0]
 
         logging.debug("  Multiplying " + d2 + " by " + d1_num)
         ans_num = self.knuth_up(d2, d1_num, full_add, iden)
@@ -404,17 +405,16 @@ class SifrSystem(object):
         a_iden = self.digit_list[0]
         m_iden = self.digit_list[1]
         exp_num, exp_xcim = self._dec_split(exp)
-        if self._orderer(exp_xcim, a_iden)[1]:
+        if self._orderer(exp_xcim, a_iden)[0]:
             raise Exception("Exponentiation only implemented for integers " +
                             "at this point")
-        base_num, base_xcim = self._dec_split(self)
+        base_num, base_xcim = self._dec_split(base)
 
         @mask_logging
         def full_mult(x, y):
             return self._base_mul(x, y)
 
         return self.knuth_up(base, exp, full_mult, m_iden)
-
 
     def _num_compare(self, d1, d2):
         ''' Compare digits magnitude, without xcimal separator
