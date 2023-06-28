@@ -22,8 +22,9 @@ from systems import SifrSystem
 bp = pdb.set_trace
 
 # DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
-log_level = logging.DEBUG
-logging.basicConfig(level=log_level)
+log_level = logging.WARNING
+
+logging.getLogger().setLevel(log_level)
 
 
 class Sifr(object):
@@ -180,15 +181,28 @@ class Sifr(object):
 
     def __pow__(self, exp):
         logging.debug("### START MAIN EXPONENTIATION")
+        logging.warning(" Only integers are supported as exponentiation")
+        if exp % Sifr(self.ssys.unit, self.ssys) == Sifr(self.ssys.iden,
+                                                         self.ssys):
+            raise Exception("Exponentiation only supports integer exponents")
+
         raw_result = self.ssys._int_exp(self.__abs__().sifr,
                                         exp.__abs__().sifr)
-        if (self.is_neg and exp.is_neg) or (not self.is_neg
-                                            and not exp.is_neg):
-            result = self.ssys._norm_ans(raw_result)
+        if exp.is_neg:
+            inv_result = Sifr(self.sys._norm_ans(raw_result), self.ssys)
+            result = Sifr(self.sys_norm.unit, self.ssys) / inv_result
+            if self.is_neg:
+                two_mod = exp % Sifr(self.ssys.unit, self.ssys)
+                if two_mod == Sifr(self.ssys.iden, self.ssys):
+                    result = Sifr(self.ssys.neg_sym + result.sifr, self.ssys)
         else:
             result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
+            if self.is_neg:
+                two_mod = exp % Sifr(self.ssys.unit, self.ssys)
+                if two_mod == Sifr(self.ssys.iden, self.ssys):
+                    result = Sifr(self.ssys.neg_sym + result.sifr, self.ssys)
         logging.debug("### END MAIN EXPONENTIATION")
-        return Sifr(result, self.ssys)
+        return result
 
     # RELATIONAL DUNDERS
     def __eq__(self, d):
@@ -272,7 +286,7 @@ class Sifr(object):
         return not greater or equal
 
 
-s = SifrSystem(xcimal_places=10)
+s = SifrSystem(xcimal_places=20)
 a = Sifr('32.961', s)
 b = Sifr('31.2614', s)
 c = Sifr('-31.261', s)

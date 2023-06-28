@@ -45,6 +45,8 @@ class SifrSystem(object):
         self.sep_point = sep_point
         self.neg_sym = neg_sym
         self.xcimal_places = xcimal_places
+        self.iden = digit_list[0]
+        self.unit = self.digit_list[1]
 
         self.base_no = len(self.digit_list)
         logging.debug("SifrSystem instantiated with characters: " +
@@ -84,10 +86,9 @@ class SifrSystem(object):
 
     def _dec_split(self, d):
         ''' Splits a decimal (non-negative) into it's consituent parts'''
-        iden = self.digit_list[0]
         d_parts = d.split(self.sep_point)
         d_num = d_parts[0]
-        d_xcimal = iden if len(d_parts) == 1 else d_parts[1]
+        d_xcimal = self.iden if len(d_parts) == 1 else d_parts[1]
 
         return d_num, d_xcimal
 
@@ -154,21 +155,20 @@ class SifrSystem(object):
     def _pad_iden(self, d1, d2, end=True):
         ''' Adds addition identity characters to digits (at end-True or
         start-False) to the arithmetic algorithm lines up to right digit '''
-        iden = self.digit_list[0]
         max_len = max(len(d1), len(d2))
         d1_padded = d1
         d2_padded = d2
         for ind in range(1, max_len + 1):
             if end:
                 if ind > len(d1):
-                    d1_padded += iden
+                    d1_padded += self.iden
                 if ind > len(d2):
-                    d2_padded += iden
+                    d2_padded += self.iden
             elif not end:
                 if ind > len(d1):
-                    d1_padded = iden + d1_padded
+                    d1_padded = self.iden + d1_padded
                 if ind > len(d2):
-                    d2_padded = iden + d2_padded
+                    d2_padded = self.iden + d2_padded
         return d1_padded, d2_padded
 
     def _base_subt_alg(self, d1, d2):
@@ -223,9 +223,8 @@ class SifrSystem(object):
         logging.debug(' d2: ' + str(d2) + ' Type: ' + str(type(d2)))
 
         # Assigns identity
-        iden = self.digit_list[0]
-        unit, _ = self.incr(iden)
-        iden_next, _ = arith_function(iden, unit)
+        unit, _ = self.incr(self.iden)
+        iden_next, _ = arith_function(self.iden, unit)
 
         # Assigns the main number and xcimal from ordered numbers
 
@@ -250,16 +249,16 @@ class SifrSystem(object):
         if carry and iden_next == unit:
             result = unit + num + self.sep_point + xcimal
         elif carry:
-            diff_num, _ = arith_function(iden*len(num), num)
+            diff_num, _ = arith_function(self.iden*len(num), num)
             diff_num, _ = arith_function(diff_num, unit)
-            diff_xcimal, _ = arith_function(iden*len(xcimal), xcimal)
+            diff_xcimal, _ = arith_function(self.iden*len(xcimal), xcimal)
             result = diff_num + self.sep_point + diff_xcimal
             zero_cross = True
         else:
             result = num + self.sep_point + xcimal
 
         logging.debug(" ### END DEC COMBINE")
-        return result.strip(iden), zero_cross
+        return result.strip(self.iden), zero_cross
 
     def _raise_by_base(self, d, exp):
         ''' Makes each digit in a number 'exp' bases higher for the digit (d).
@@ -288,8 +287,6 @@ class SifrSystem(object):
             for dig in self.digit_list:
                 if dig == d2_dig:
                     break
-                print(result)
-                print(self._raise_by_base(d1, fig_count))
                 result = algo(result, self._raise_by_base(d1, fig_count))
             fig_count += 1
         return result
@@ -299,7 +296,6 @@ class SifrSystem(object):
         ignoring negative signs (only provide magnitude)'''
 
         logging.debug(" ### START BASE MULT")
-        iden = self.digit_list[0]
 
         logging.debug(' d1: ' + str(d1) + ' Type: ' + str(type(d1)))
         logging.debug(' d2: ' + str(d2) + ' Type: ' + str(type(d2)))
@@ -314,14 +310,14 @@ class SifrSystem(object):
             return self._dec_combine(x, y, self._base_add_alg)[0]
 
         logging.debug("  Multiplying " + d2 + " by " + d1_num)
-        ans_num = self.knuth_up(d2, d1_num, full_add, iden)
+        ans_num = self.knuth_up(d2, d1_num, full_add, self.iden)
         logging.debug("  Answer main number: " + ans_num)
 
         logging.debug("  Multiplying " + d2 + " by " + d1_num)
         ans_xcimal = self.knuth_up(d2,
                                    d1_xcimal,
                                    full_add,
-                                   iden)
+                                   self.iden)
         logging.debug("  Answer xcimal: " + ans_xcimal)
 
         # Update ans xcimal with right xcimal point
@@ -329,8 +325,8 @@ class SifrSystem(object):
 
         xc_reduce = len(d1_xcimal)
         if xc_reduce >= len(ans_xc_num):
-            ans_xc_fin = (iden + self.sep_point
-                          + iden*(xc_reduce - len(ans_xc_num))
+            ans_xc_fin = (self.iden + self.sep_point
+                          + self.iden*(xc_reduce - len(ans_xc_num))
                           + ans_xc_xcimal)
         else:
             ans_xc_fin = (ans_xc_num[:-xc_reduce] + self.sep_point
@@ -343,12 +339,11 @@ class SifrSystem(object):
         return multpd
 
     def _times_in_num(self, numer, denom):
-        logging.debug("    ##### Begin times in num count")
+        logging.debug("    ##### ḂEGIN TIMES IN NUM COUNT")
         logging.debug("     ##### Dividing " + numer + " by " + denom)
-        iden = self.digit_list[0]
         unit = self.digit_list[1]
-        prod = iden
-        quot = iden
+        prod = self.iden
+        quot = self.iden
 
         @mask_logging
         def full_add(x, y):
@@ -373,14 +368,14 @@ class SifrSystem(object):
         logging.debug("     ##### Final product: " + prod)
         modulus = full_subt(numer, prod)
         logging.debug("     ##### Remainder: " + prod)
-        logging.debug("    ##### End times in num count")
+        logging.debug("    ##### END TIMES IN NUM COUNT")
         return quot.split(self.sep_point)[0], modulus
 
     def _base_div(self, numer, denom):
-        iden = self.digit_list[0]
         logging.debug(" ### START BASE DIV")
+        logging.debug("  # Dividing " + numer + " by " + denom)
 
-        @mask_logging
+        # @mask_logging
         def lil_div(num, den):
             return self._times_in_num(num, den)
 
@@ -388,24 +383,24 @@ class SifrSystem(object):
         xcim_count = 1
         first_div, modls = lil_div(numer, denom)
         divd = first_div + self.sep_point
-        logging.debug("  Main number: " + divd)
+        logging.debug("  Main number: " + self._norm_ans(divd))
+        logging.debug("  Modulus to be divided in xcimal: " + modls)
 
         while not mod_zero and xcim_count <= self.xcimal_places:
+            logging.debug("   # New decimal")
             m_quot, modls = lil_div(self._raise_by_base(modls, 1), denom)
-            mod_zero = self._orderer(modls, iden)[1]
+            mod_zero = self._orderer(modls, self.iden)[1]
             xcim_count += 1
             divd += m_quot
-            logging.debug("   Modulus: " + modls)
             logging.debug("   Extra xcimal: " + m_quot
-                          + " Xcimal count: " + str(xcim_count))
+                          + " Xcimal count: " + str(xcim_count - 1))
+            logging.debug("   Modulus: " + self._norm_ans(modls))
         logging.debug(" ### END BASE DIV")
         return self._norm_ans(divd)
 
     def _int_exp(self, base, exp):
-        a_iden = self.digit_list[0]
-        m_iden = self.digit_list[1]
         exp_num, exp_xcim = self._dec_split(exp)
-        if self._orderer(exp_xcim, a_iden)[0]:
+        if self._orderer(exp_xcim, self.iden)[0]:
             raise Exception("Exponentiation only implemented for integers " +
                             "at this point")
         base_num, base_xcim = self._dec_split(base)
@@ -414,7 +409,7 @@ class SifrSystem(object):
         def full_mult(x, y):
             return self._base_mul(x, y)
 
-        return self.knuth_up(base, exp, full_mult, m_iden)
+        return self.knuth_up(base, exp, full_mult, self.unit)
 
     def _num_compare(self, d1, d2):
         ''' Compare digits magnitude, without xcimal separator
@@ -431,7 +426,7 @@ class SifrSystem(object):
 
         for dig_ind in range(min(len(d1), len(d2))):
             equal = False
-            for dig in self.digit_list[::-1]:
+            for dig in self.digit_list[::-1]: 
                 if d1[dig_ind] == dig and d2[dig_ind] == dig:
                     equal = True
                     to_break = False
@@ -468,6 +463,8 @@ class SifrSystem(object):
 
     def _orderer(self, d1, d2):
         logging.debug(" ### START ORDERER")
+        d1 = self._norm_ans(d1)
+        d2 = self._norm_ans(d2)
         d1_num, d1_xcimal = self._dec_split(d1)
         d2_num, d2_xcimal = self._dec_split(d2)
 
