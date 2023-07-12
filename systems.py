@@ -34,7 +34,7 @@ def mask_logging(func):
 
 class SifrSystem(object):
     def __init__(self, digit_list='0123456789', sep_point='.', neg_sym='-',
-                 xcimal_places=40):
+                 xcimal_places=40, round_type='half2inf'):
         unique_digits = len(set(digit_list)) != len(digit_list)
         sep_not_in_digits = sep_point not in digit_list
         neg_not_in_digits = neg_sym not in digit_list
@@ -47,6 +47,9 @@ class SifrSystem(object):
         self.xcimal_places = xcimal_places
         self.iden = digit_list[0]
         self.unit = self.digit_list[1]
+        self.round_type = round_type
+
+        self.ROUNDING_FUNCTIONS = {'half2inf': self.round_half_to_inf}
 
         self.base_no = len(self.digit_list)
         logging.debug("SifrSystem instantiated with characters: " +
@@ -93,7 +96,9 @@ class SifrSystem(object):
         return d_num, d_xcimal
 
     def _base_add_alg(self, d1, d2):
-        '''Adds two sequences to the length of the maximum digit.
+        '''Adds two sifr sequences to the length of the maximum digit.
+        I.e. use the carry returned if the digit needs to start with a one as
+        this onlyl adds to the length of the sequence.
         Returns: [Added sequence, next digit should be carried]'''
 
         logging.debug("  ### START BASE ADD")
@@ -386,7 +391,7 @@ class SifrSystem(object):
         logging.debug("  Main number: " + self._norm_ans(divd))
         logging.debug("  Modulus to be divided in xcimal: " + modls)
 
-        while not mod_zero and xcim_count <= self.xcimal_places:
+        while not mod_zero and xcim_count <= self.xcimal_places + 1:
             logging.debug("   # New decimal")
             m_quot, modls = lil_div(self._raise_by_base(modls, 1), denom)
             mod_zero = self._orderer(modls, self.iden)[1]
@@ -395,6 +400,9 @@ class SifrSystem(object):
             logging.debug("   Extra xcimal: " + m_quot
                           + " Xcimal count: " + str(xcim_count - 1))
             logging.debug("   Modulus: " + self._norm_ans(modls))
+
+        if xcim_count == self.xcimal_places + 1:
+            self.round_half_to_inf(divd, self.xcimal_places)
         logging.debug(" ### END BASE DIV")
         return self._norm_ans(divd)
 
@@ -480,6 +488,45 @@ class SifrSystem(object):
                 greater, equal = self._num_compare(d1_xcimal, d2_xcimal)
         logging.debug(" ### END ORDERER")
         return greater, equal
+
+    def round(self, num, round_level):
+        round_function = self.ROUNDING_FUNCTIONS[self.round_type]
+        return round_function(num, round_level)
+
+    def round_half_to_inf(self, num, round_level):
+        logging.debug(" ### START HALF-TO-INF ROUNDING ")
+        '''Rounds a non-negative number to the given number of xcimal places'''
+        main_no, xcimal_no = self._dec_split(num)
+        if not len(xcimal_no) <= round_level:
+            logging.debug("    Number to be rounded")
+            rounded_xcimal = xcimal_no[:round_level]
+            next_num = xcimal_no[round_level]  # Takes number after round limit
+            if next_num in self.digit_list[round(len(self.digit_list) / 2
+                                                 + 0.1):]:
+                # Above 0.1 is to ensure ceiling round of half
+                logging.debug("     Number after limit is in upper range "
+                              + "of digit list, round up")
+                rounded_xcimal, xcim_carry = self._base_add_alg(rounded_xcimal,
+                                                                self.unit)
+                if xcim_carry:
+                    main_no, main_carry = self._base_add_alg(main_no,
+                                                             self.unit)
+                    if main_carry:
+                        rounded = (self.unit + main_no + self.sep_point +
+                                   rounded_xcimal)
+                    else:
+                        rounded = (main_no + self.sep_point + rounded_xcimal)
+                else:
+                    rounded = main_no + self.sep_point + rounded_xcimal
+            else:
+                logging.debug("     Number after limit is on lower range of "
+                              + "digit list, round down")
+                rounded = main_no + self.sep_point + rounded_xcimal
+        else:
+            logging.debug("    Number already in rounding bounds")
+            rounded = num
+        logging.debug(" ### END HALF-TO-INF ROUNDING ")
+        return self._norm_ans(rounded)
 
     def _norm_ans(self, raw_ans: str):
         just_neg_and_point = raw_ans == (self.neg_sym + self.sep_point)

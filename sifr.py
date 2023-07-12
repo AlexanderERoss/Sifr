@@ -22,7 +22,7 @@ from systems import SifrSystem
 bp = pdb.set_trace
 
 # DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
-log_level = logging.WARNING
+log_level = logging.DEBUG
 
 logging.getLogger().setLevel(log_level)
 
@@ -285,8 +285,18 @@ class Sifr(object):
         logging.debug("### END MAIN LESS THAN OR EQUAL TO")
         return not greater or equal
 
+    # Extra Unary Functions
 
-s = SifrSystem(xcimal_places=20)
+    def round(self, round_level):
+        if not self.is_neg:
+            rounded = s.round(self.sifr, round_level)
+        else:
+            rounded = self.ssys.neg_sym + s.round(self.__abs__().sifr,
+                                                  round_level)
+        return Sifr(rounded, s)
+
+
+s = SifrSystem(xcimal_places=10)
 a = Sifr('32.961', s)
 b = Sifr('31.2614', s)
 c = Sifr('-31.261', s)
