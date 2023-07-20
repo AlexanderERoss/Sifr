@@ -224,12 +224,8 @@ class SifrSystem(object):
     def _dec_combine(self, d1, d2, arith_function):
         logging.debug(" ### START DEC COMBINE")
 
-        logging.debug(' d1: ' + str(d1) + ' Type: ' + str(type(d1)))
-        logging.debug(' d2: ' + str(d2) + ' Type: ' + str(type(d2)))
-
-        # Assigns identity
-        unit, _ = self.incr(self.iden)
-        iden_next, _ = arith_function(self.iden, unit)
+        # Assigns number after identity in direction of alg provided
+        iden_next, _ = arith_function(self.iden, self.unit)
 
         # Assigns the main number and xcimal from ordered numbers
 
@@ -240,25 +236,39 @@ class SifrSystem(object):
         xcimal1, xcimal2 = self._pad_iden(xcimal1, xcimal2)
 
         # Use the described arithmetic function to calculate
+        logging.debug("     Operating on xcimals: "
+                      + xcimal1 + " and " + xcimal2)
         xcimal, xc_carry = arith_function(xcimal1, xcimal2)
 
         zero_cross = False
+        logging.debug("       Operating on nums: " + num1 + " and " + num2)
 
         if xc_carry:
-            num, temp_carry = arith_function(num1, unit)
+            logging.debug("      Xcimal carries")
+            num, temp_carry = arith_function(num1, self.unit)
             num = num if not temp_carry else iden_next + num
             num, carry = arith_function(num, num2)
         else:
+            logging.debug("      Xcimal doesn't carry")
             num, carry = arith_function(num1, num2)
 
-        if carry and iden_next == unit:
-            result = unit + num + self.sep_point + xcimal
+        if carry and iden_next == self.unit:
+            # Only applies if addition
+            logging.debug("      Adding a unit to start for add")
+            result = self.unit + num + self.sep_point + xcimal
         elif carry:
+            logging.debug("      Zero is crossed so answer is subtracted " +
+                          "from zero")
+            # Applies if negative and carry (therefore zero is crossed)
+            diff_xcimal, diff_carry = arith_function(self.iden*len(xcimal),
+                                                     xcimal)
             diff_num, _ = arith_function(self.iden*len(num), num)
-            diff_num, _ = arith_function(diff_num, unit)
-            diff_xcimal, _ = arith_function(self.iden*len(xcimal), xcimal)
+            if diff_carry:  # Basically if decimal is non-zero
+                diff_num, _ = arith_function(diff_num, self.unit)
+
             result = diff_num + self.sep_point + diff_xcimal
             zero_cross = True
+            logging.debug("      Zero crossed")
         else:
             result = num + self.sep_point + xcimal
 
@@ -395,14 +405,16 @@ class SifrSystem(object):
             logging.debug("   # New decimal")
             m_quot, modls = lil_div(self._raise_by_base(modls, 1), denom)
             mod_zero = self._orderer(modls, self.iden)[1]
-            xcim_count += 1
             divd += m_quot
+            xcim_count += 1
             logging.debug("   Extra xcimal: " + m_quot
                           + " Xcimal count: " + str(xcim_count - 1))
             logging.debug("   Modulus: " + self._norm_ans(modls))
 
+        xcim_count -= 1  # Revert previous increment
+
         if xcim_count == self.xcimal_places + 1:
-            self.round_half_to_inf(divd, self.xcimal_places)
+            divd = self.round(divd, self.xcimal_places)
         logging.debug(" ### END BASE DIV")
         return self._norm_ans(divd)
 
@@ -529,19 +541,23 @@ class SifrSystem(object):
         return self._norm_ans(rounded)
 
     def _norm_ans(self, raw_ans: str):
+        # Fixes just decimal point being there
         just_neg_and_point = raw_ans == (self.neg_sym + self.sep_point)
         just_point = raw_ans == self.sep_point
         if just_neg_and_point or just_point:
-            norm_ans = self.digit_list[0] + self.sep_point + self.digit_list[0]
+            norm_ans = self.iden + self.sep_point + self.iden
         else:
             norm_ans = raw_ans
+        # Fixes cases where zero to be non-negative form of zero
         if (norm_ans == (self.neg_sym + self.iden) or
             norm_ans == (self.neg_sym + self.iden +
                          self.sep_point + self.iden)):
             norm_ans = norm_ans.replace(self.neg_sym + self.iden, self.iden)
         # Intentionally chosen to always have a zero to indicate that this
         # type is always capable of behaving as a float.
-        if norm_ans[-1] == self.sep_point:
-            norm_ans = norm_ans + self.digit_list[0]
+        if norm_ans.rstrip()[-1] == self.sep_point:
+            norm_ans = norm_ans + self.iden
+        if self.sep_point not in norm_ans:
+            norm_ans = norm_ans + self.sep_point + self.iden
         logging.debug("  ### NORMALIZED ANSWER")
         return norm_ans

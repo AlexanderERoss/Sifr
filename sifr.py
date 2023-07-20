@@ -16,15 +16,11 @@
 
 import logging
 import pdb
+
 from systems import SifrSystem
 
 # Make breakpoint shorter
 bp = pdb.set_trace
-
-# DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
-log_level = logging.DEBUG
-
-logging.getLogger().setLevel(log_level)
 
 
 class Sifr(object):
@@ -44,28 +40,26 @@ class Sifr(object):
     def __abs__(self):
         logging.debug("### START MAIN MAGNITUDE")
         if self.ssys.neg_sym != self.sifr[0]:
-            result = Sifr(self.sifr, self.ssys)
+            result = Sifr(self.ssys._norm_ans(self.sifr), self.ssys)
         else:
-            result = Sifr(self.sifr[1:], self.ssys)
+            result = Sifr(self.ssys._norm_ans(self.sifr[1:]), self.ssys)
         logging.debug("### END MAIN MAGNITUDE")
         return result
 
     def __neg__(self):
         logging.debug("### START MAIN NEGATION")
         if self.is_neg:
-            result = Sifr(self.sifr[1:], self.ssys)
+            result = Sifr(self.ssys._norm_ans(self.sifr[1:]), self.ssys)
         else:
-            norm = self.ssys._norm_ans
-            result = Sifr(norm(self.ssys.neg_sym + self.sifr),
+            result = Sifr(self.ssys._norm_ans(self.ssys.neg_sym + self.sifr),
                           self.ssys)
         logging.debug("### END MAIN NEGATION")
         return result
 
     def __pos__(self):
         logging.debug("### START MAIN POSITIVE")
-        norm = self.ssys._norm_ans
         logging.debug("### END MAIN POSITIVE")
-        return Sifr(norm(self.sifr), self.ssys)
+        return Sifr(self.ssys._norm_ans(self.sifr), self.ssys)
 
     # ARITHMETIC DUNDERS
     def __add__(self, add_no):
@@ -94,6 +88,8 @@ class Sifr(object):
 
         # Negative and positive to counteract
         else:
+            logging.info("  Only one of either numbers is negative, " +
+                         "to subtract absolute values")
             b_neg = self.ssys._base_subt_alg
             self_mag = self.sifr if not self.is_neg else self.sifr[1:]
             add_no_mag = add_no.sifr if not add_no.is_neg else add_no.sifr[1:]
@@ -103,7 +99,7 @@ class Sifr(object):
             elif self.is_neg and not zero_crossed:
                 result = Sifr(norm(neg_sym + added), self.ssys)
             elif not self.is_neg and zero_crossed:
-                result = Sifr(neg_sym + added, self.ssys)
+                result = Sifr(norm(neg_sym + added), self.ssys)
             elif not self.is_neg and not zero_crossed:
                 result = Sifr(norm(added), self.ssys)
 
@@ -289,21 +285,9 @@ class Sifr(object):
 
     def round(self, round_level):
         if not self.is_neg:
-            rounded = s.round(self.sifr, round_level)
+            rounded = self.ssys.round(self.sifr, round_level)
         else:
-            rounded = self.ssys.neg_sym + s.round(self.__abs__().sifr,
-                                                  round_level)
-        return Sifr(rounded, s)
-
-
-s = SifrSystem(xcimal_places=10)
-a = Sifr('32.961', s)
-b = Sifr('31.2614', s)
-c = Sifr('-31.261', s)
-d = Sifr('2192.845', s)
-i = Sifr('5', s)
-
-ad = 32.961
-bd = 31.2614
-cd = -31.261
-dd = 2192.845
+            rounded = self.ssys.neg_sym + self.ssys.round(self.__abs__().sifr,
+                                                          round_level)
+        return Sifr(rounded, self.ssys)
+ 
