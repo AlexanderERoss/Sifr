@@ -151,15 +151,13 @@ class Sifr(object):
         logging.debug("### START MAIN MOD")
         raw_result = self.ssys._times_in_num(self.__abs__().sifr,
                                              div_no.__abs__().sifr)[1]
-        if (self.is_neg and div_no.is_neg) or (not self.is_neg
-                                               and not div_no.is_neg):
-            result = Sifr(self.ssys._norm_ans(raw_result),
-                          self.ssys)
-        else:
+        if div_no.is_neg:
             result = Sifr(self.ssys._norm_ans(self.ssys.neg_sym + raw_result),
                           self.ssys)
-            # Mod for negatives should be from the whole factor below
-            # hence the magnitude calc needs to be reverted
+        else:
+            result = Sifr(self.ssys._norm_ans(raw_result),
+                          self.ssys)
+        if self.is_neg != div_no.is_neg:
             result = div_no - result
         logging.debug("### END MAIN MOD")
         return result
@@ -296,4 +294,3 @@ class Sifr(object):
             rounded = self.ssys.neg_sym + self.ssys.round(self.__abs__().sifr,
                                                           round_level)
         return Sifr(rounded, self.ssys)
- 

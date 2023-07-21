@@ -5,7 +5,6 @@
 # standard python
 # #############################################################################
 
-import pytest
 import logging
 
 from systems import SifrSystem
@@ -23,7 +22,7 @@ s = SifrSystem(xcimal_places=PRECISION)
 # Sub one positive rational number
 a = Sifr('0.96123724', s)
 # Large positive rational number
-b = Sifr('2192.845', s)
+b = Sifr('2192.8459', s)
 # Negative rational number
 c = Sifr('-31.261234', s)
 # Positive integer
@@ -32,7 +31,7 @@ d = Sifr('3', s)
 e = Sifr('-5', s)
 
 ad = 0.96123724
-bd = 2192.845
+bd = 2192.8459
 cd = -31.261234
 dd = 3.0  # Declare as float to ensure only one type of function for all
 ed = -5.0  # Declare as float to ensure only one type of function for all
@@ -76,6 +75,7 @@ def unary_tester(sifr, sifr_op, num, num_op):
                 " is not equal to float result: " + \
                 str(round(float_result, PRECISION))
             print("    PASS")
+            print("    Result: " + sifr_result.sifr)
         except AssertionError as aser:
             print("    FAIL")
             print("    " + str(aser))
@@ -94,6 +94,7 @@ def binary_tester(sifr1, sifr2, sifr_op, num1, num2, num_op):
                 " is not equal to float result: " + \
                 str(round(float_result, PRECISION))
             print("    PASS")
+            print("    Result: " + sifr_result.sifr)
         except AssertionError as aser:
             print("    FAIL")
             print("    " + str(aser))
@@ -112,6 +113,7 @@ def rel_tester(sifr1, sifr2, sifr_op, num1, num2, num_op):
                 " is not float result: " + \
                 str(float_result)
             print("    PASS")
+            print("    Result: " + str(sifr_result))
         except AssertionError as aser:
             print("    FAIL")
             print("    " + str(aser))
