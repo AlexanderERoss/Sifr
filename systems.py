@@ -379,7 +379,7 @@ class SifrSystem(object):
             logging.debug("      ##### Running tally: " + prod)
             new_prod = full_add(prod, denom)
             new_quot = full_add(quot, unit)
-            if any(self._orderer(new_prod, numer)):
+            if self._orderer(new_prod, numer)[0]:
                 break
             prod = new_prod
             quot = new_quot
