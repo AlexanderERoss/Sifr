@@ -226,9 +226,9 @@ class Sifr(object):
         if not self.is_neg and not d.is_neg:
             greater, _ = self.ssys._orderer(self.sifr, d.sifr)
         elif self.is_neg and d.is_neg:
-            not_greater, _ = self.ssys._orderer(self.__abs__().sifr,
-                                                d.__abs__().sifr)
-            greater = not not_greater
+            not_greater, equal = self.ssys._orderer(self.__abs__().sifr,
+                                                    d.__abs__().sifr)
+            greater = not not_greater and not equal
         elif self.is_neg and not d.is_neg:
             greater = False
         elif not self.is_neg and d.is_neg:

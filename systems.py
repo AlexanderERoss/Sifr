@@ -567,5 +567,9 @@ class SifrSystem(object):
             norm_ans = self.iden + norm_ans
         if self.sep_point not in norm_ans:
             norm_ans = norm_ans + self.sep_point + self.iden
+        # Fix trailing zeroes
+        while norm_ans[-1:] == self.iden and norm_ans[-2:] != (self.sep_point
+                                                               + self.iden):
+            norm_ans = norm_ans[:-1]
         logging.debug("  ### NORMALIZED ANSWER")
         return norm_ans
