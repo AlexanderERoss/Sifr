@@ -18,6 +18,7 @@ import logging
 import pdb
 
 from systems import SifrSystem
+from systems import SifrScopeException
 
 # Make breakpoint shorter
 bp = pdb.set_trace
@@ -180,21 +181,26 @@ class Sifr(object):
         logging.warning(" Only integers are supported as exponentiation")
         if exp % Sifr(self.ssys.unit, self.ssys) == Sifr(self.ssys.iden,
                                                          self.ssys):
-            raise Exception("Exponentiation only supports integer exponents")
+            raise SifrScopeException("Exponentiation only supports " +
+                                     "integer exponents")
 
         raw_result = self.ssys._int_exp(self.__abs__().sifr,
                                         exp.__abs__().sifr)
+
         if exp.is_neg:
-            inv_result = Sifr(self.sys._norm_ans(raw_result), self.ssys)
-            result = Sifr(self.sys_norm.unit, self.ssys) / inv_result
+            inv_result = Sifr(self.ssys._norm_ans(raw_result), self.ssys)
+            result = Sifr(self.ssys.unit, self.ssys) / inv_result
             if self.is_neg:
-                two_mod = exp % Sifr(self.ssys.unit, self.ssys)
+                two_mod = exp % (Sifr(self.ssys.unit, self.ssys) +
+                                 Sifr(self.ssys.unit, self.ssys))
                 if two_mod == Sifr(self.ssys.iden, self.ssys):
                     result = Sifr(self.ssys.neg_sym + result.sifr, self.ssys)
         else:
-            result = self.ssys._norm_ans(self.ssys.neg_sym + raw_result)
+            result = Sifr(self.ssys._norm_ans(self.ssys.neg_sym + raw_result),
+                          self.ssys)
             if self.is_neg:
-                two_mod = exp % Sifr(self.ssys.unit, self.ssys)
+                two_mod = exp % (Sifr(self.ssys.unit, self.ssys) +
+                                 Sifr(self.ssys.unit, self.ssys))
                 if two_mod == Sifr(self.ssys.iden, self.ssys):
                     result = Sifr(self.ssys.neg_sym + result.sifr, self.ssys)
         logging.debug("### END MAIN EXPONENTIATION")
@@ -206,8 +212,8 @@ class Sifr(object):
         if not self.is_neg and not d.is_neg:
             _, equal = self.ssys._orderer(self.sifr, d.sifr)
         elif self.is_neg and d.is_neg:
-            _, equal = self.ssys._orderer(self.sifr.__abs__(),
-                                          d.sifr.__abs__())
+            _, equal = self.ssys._orderer(self.__abs__().sifr,
+                                          d.__abs__().sifr)
         elif self.is_neg and not d.is_neg:
             equal = False
         elif not self.is_neg and d.is_neg:
@@ -220,8 +226,8 @@ class Sifr(object):
         if not self.is_neg and not d.is_neg:
             greater, _ = self.ssys._orderer(self.sifr, d.sifr)
         elif self.is_neg and d.is_neg:
-            not_greater, _ = self.ssys._orderer(self.sifr.__abs__(),
-                                                d.sifr.__abs__())
+            not_greater, _ = self.ssys._orderer(self.__abs__().sifr,
+                                                d.__abs__().sifr)
             greater = not not_greater
         elif self.is_neg and not d.is_neg:
             greater = False
@@ -235,8 +241,8 @@ class Sifr(object):
         if not self.is_neg and not d.is_neg:
             greater, equal = self.ssys._orderer(self.sifr, d.sifr)
         elif self.is_neg and d.is_neg:
-            not_greater, equal = self.ssys._orderer(self.sifr.__abs__(),
-                                                    d.sifr.__abs__())
+            not_greater, equal = self.ssys._orderer(self.__abs__().sifr,
+                                                    d.__abs__().sifr)
             greater = not not_greater
         elif self.is_neg and not d.is_neg:
             greater = False
@@ -269,8 +275,8 @@ class Sifr(object):
         if not self.is_neg and not d.is_neg:
             greater, equal = self.ssys._orderer(self.sifr, d.sifr)
         elif self.is_neg and d.is_neg:
-            not_greater, equal = self.ssys._orderer(self.sifr.__abs__(),
-                                                    d.sifr.__abs__())
+            not_greater, equal = self.ssys._orderer(self.__abs__().sifr,
+                                                    d.__abs__().sifr)
             greater = not not_greater
         elif self.is_neg and not d.is_neg:
             greater = False

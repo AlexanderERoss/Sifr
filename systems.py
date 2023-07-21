@@ -9,6 +9,7 @@
 import logging
 import pdb
 
+
 # Make breakpoint shorter
 bp = pdb.set_trace
 
@@ -16,9 +17,8 @@ bp = pdb.set_trace
 log_level = logging.ERROR
 logging.basicConfig(level=log_level)
 
+
 # DECORATORS
-
-
 def mask_logging(func):
     def wrapper(*args):
         prev_log_level = logging.root.level
@@ -29,9 +29,14 @@ def mask_logging(func):
     return wrapper
 
 
-# SYSTEMS
+# EXCEPTIONS
+class SifrScopeException(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(message)
 
 
+# SYSTEM
 class SifrSystem(object):
     def __init__(self, digit_list='0123456789', sep_point='.', neg_sym='-',
                  xcimal_places=40, round_type='half2inf'):
@@ -312,9 +317,6 @@ class SifrSystem(object):
 
         logging.debug(" ### START BASE MULT")
 
-        logging.debug(' d1: ' + str(d1) + ' Type: ' + str(type(d1)))
-        logging.debug(' d2: ' + str(d2) + ' Type: ' + str(type(d2)))
-
         d1_num, d1_xcimal = self._dec_split(d1)
 
         logging.debug("  d1_num :" + d1_num)
@@ -328,7 +330,7 @@ class SifrSystem(object):
         ans_num = self.knuth_up(d2, d1_num, full_add, self.iden)
         logging.debug("  Answer main number: " + ans_num)
 
-        logging.debug("  Multiplying " + d2 + " by " + d1_num)
+        logging.debug("  Multiplying " + d2 + " by " + d1_xcimal)
         ans_xcimal = self.knuth_up(d2,
                                    d1_xcimal,
                                    full_add,
@@ -342,16 +344,18 @@ class SifrSystem(object):
         if xc_reduce >= len(ans_xc_num):
             ans_xc_fin = (self.iden + self.sep_point
                           + self.iden*(xc_reduce - len(ans_xc_num))
-                          + ans_xc_xcimal)
+                          + ans_xc_num + ans_xc_xcimal)
         else:
             ans_xc_fin = (ans_xc_num[:-xc_reduce] + self.sep_point
                           + ans_xc_num[-xc_reduce:] + ans_xc_xcimal)
+
+        logging.debug("  Answer xcimal reduced to add: " + ans_xc_fin)
 
         multpd, _ = self._dec_combine(ans_num,
                                       ans_xc_fin,
                                       self._base_add_alg)
         logging.debug(" ### END BASE MULT")
-        return multpd
+        return self.round(multpd, self.xcimal_places)
 
     def _times_in_num(self, numer, denom):
         logging.debug("    ##### ḂEGIN TIMES IN NUM COUNT")
@@ -421,8 +425,8 @@ class SifrSystem(object):
     def _int_exp(self, base, exp):
         exp_num, exp_xcim = self._dec_split(exp)
         if self._orderer(exp_xcim, self.iden)[0]:
-            raise Exception("Exponentiation only implemented for integers " +
-                            "at this point")
+            raise SifrScopeException("Exponentiation only implemented " +
+                                     "for integers at this point")
         base_num, base_xcim = self._dec_split(base)
 
         @mask_logging
@@ -541,6 +545,8 @@ class SifrSystem(object):
         return self._norm_ans(rounded)
 
     def _norm_ans(self, raw_ans: str):
+        raw_ans = raw_ans.strip()
+
         # Fixes just decimal point being there
         just_neg_and_point = raw_ans == (self.neg_sym + self.sep_point)
         just_point = raw_ans == self.sep_point
@@ -555,8 +561,10 @@ class SifrSystem(object):
             norm_ans = norm_ans.replace(self.neg_sym + self.iden, self.iden)
         # Intentionally chosen to always have a zero to indicate that this
         # type is always capable of behaving as a float.
-        if norm_ans.rstrip()[-1] == self.sep_point:
-            norm_ans = norm_ans + self.iden
+        if norm_ans[-1] == self.sep_point:
+            norm_ans = norm_ans.rstrip() + self.iden
+        if norm_ans[0] == self.sep_point:
+            norm_ans = self.iden + norm_ans
         if self.sep_point not in norm_ans:
             norm_ans = norm_ans + self.sep_point + self.iden
         logging.debug("  ### NORMALIZED ANSWER")

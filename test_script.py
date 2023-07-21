@@ -9,6 +9,7 @@ import pytest
 import logging
 
 from systems import SifrSystem
+from systems import SifrScopeException
 from sifr import Sifr
 
 # DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
@@ -66,21 +67,57 @@ compare_link = {'eq': (float.__eq__, Sifr.__eq__),
 
 # Test functions
 def unary_tester(sifr, sifr_op, num, num_op):
-    sifr_result = sifr_op(sifr)
-    float_result = num_op(num)
-    assert sifr_result.sifr == str(round(float_result, PRECISION)), \
-        "Sifr result: " + sifr_result.sifr + \
-        " is not equal to float result: " + \
-        str(round(float_result, PRECISION))
+    try:
+        sifr_result = sifr_op(sifr)
+        float_result = num_op(num)
+        try:
+            assert sifr_result.sifr == str(round(float_result, PRECISION)), \
+                "Sifr result: " + sifr_result.sifr + \
+                " is not equal to float result: " + \
+                str(round(float_result, PRECISION))
+            print("    PASS")
+        except AssertionError as aser:
+            print("    FAIL")
+            print("    " + str(aser))
+    except SifrScopeException as sse:
+        print("    OUT OF SCOPE")
+        print("    " + sse.message)
 
 
 def binary_tester(sifr1, sifr2, sifr_op, num1, num2, num_op):
-    sifr_result = sifr_op(sifr1, sifr2)
-    float_result = num_op(num1, num2)
-    assert sifr_result.sifr == str(round(float_result, PRECISION)), \
-        "Sifr result: " + sifr_result.sifr + \
-        " is not equal to float result: " + \
-        str(round(float_result, PRECISION))
+    try:
+        sifr_result = sifr_op(sifr1, sifr2)
+        float_result = num_op(num1, num2)
+        try:
+            assert sifr_result.sifr == str(round(float_result, PRECISION)), \
+                "Sifr result: " + sifr_result.sifr + \
+                " is not equal to float result: " + \
+                str(round(float_result, PRECISION))
+            print("    PASS")
+        except AssertionError as aser:
+            print("    FAIL")
+            print("    " + str(aser))
+    except SifrScopeException as sse:
+        print("    OUT OF SCOPE")
+        print("    " + sse.message)
+
+
+def rel_tester(sifr1, sifr2, sifr_op, num1, num2, num_op):
+    try:
+        sifr_result = sifr_op(sifr1, sifr2)
+        float_result = num_op(num1, num2)
+        try:
+            assert sifr_result == float_result, \
+                "Sifr result: " + str(sifr_result) + \
+                " is not float result: " + \
+                str(float_result)
+            print("    PASS")
+        except AssertionError as aser:
+            print("    FAIL")
+            print("    " + str(aser))
+    except SifrScopeException as sse:
+        print("    OUT OF SCOPE")
+        print("    " + sse.message)
 
 
 # BRUTE FORCE TESTING SCRIPT
@@ -93,7 +130,6 @@ for funct in unary_link:
                      num,
                      unary_link[funct][0]
                      )
-        print("    PASS")
 
 # Binary function tests
 for funct in arith_link:
@@ -108,19 +144,17 @@ for funct in arith_link:
                           num2,
                           arith_link[funct][0]
                           )
-            print("    PASS")
 
-# Comparisonn tests
+# Comparison tests
 for funct in compare_link:
     for num1 in number_link:
         for num2 in number_link:
             print("Testing the function: " + funct + " with numbers: "
                   + str(num1) + " and " + str(num2))
-            binary_tester(number_link[num1],
-                          number_link[num2],
-                          compare_link[funct][1],
-                          num1,
-                          num2,
-                          compare_link[funct][0]
-                          )
-            print("    PASS")
+            rel_tester(number_link[num1],
+                       number_link[num2],
+                       compare_link[funct][1],
+                       num1,
+                       num2,
+                       compare_link[funct][0]
+                       )
