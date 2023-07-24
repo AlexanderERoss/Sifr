@@ -34,6 +34,8 @@ class SifrScopeException(Exception):
 
 # SYSTEM
 class SifrSystem(object):
+    '''(digit_list, sep_point, neg_sym, xcimal_places, round_type)
+    '''
     def __init__(self, digit_list='0123456789', sep_point='.', neg_sym='-',
                  xcimal_places=40, round_type='half2inf'):
         unique_digits = len(set(digit_list)) != len(digit_list)
@@ -88,8 +90,8 @@ class SifrSystem(object):
         carry = True
         return self.digit_list[-1], carry
 
-    def _dec_split(self, d):
         ''' Splits a decimal (non-negative) into it's consituent parts'''
+    def _dec_split(self, d):
         d_parts = d.split(self.sep_point)
         d_num = d_parts[0]
         d_xcimal = self.iden if len(d_parts) == 1 else d_parts[1]
@@ -294,17 +296,25 @@ class SifrSystem(object):
 
     def knuth_up(self, d1, d2, algo, iden):
         '''algo is add for multiply, and algo is multiply for exponentiation'''
-
+        logging.debug("   Start Knuth up")
         result = iden
+
+        @mask_logging
+        def _masked_raise_by_base(num, exp):
+            return self._raise_by_base(num, exp)
 
         # Loop through each xcimal to apply 'algo' that number of times
         fig_count = 0
+        logging.debug("     Applying algo provided " + d2 + " times")
         for d2_dig in d2[::-1]:
+            logging.debug("      Digit: " + d2_dig)
             for dig in self.digit_list:
                 if dig == d2_dig:
                     break
-                result = algo(result, self._raise_by_base(d1, fig_count))
+                result = algo(result, _masked_raise_by_base(d1, fig_count))
+                logging.debug("      Knuth running result: " + result)
             fig_count += 1
+        logging.debug("   End Knuth up")
         return result
 
     def _base_mul(self, d1, d2):
@@ -428,8 +438,8 @@ class SifrSystem(object):
         @mask_logging
         def full_mult(x, y):
             return self._base_mul(x, y)
-
-        return self.knuth_up(base, exp, full_mult, self.unit)
+        logging.debug("Base: " + base + " Exp: " + exp)
+        return self.knuth_up(base, exp_num, full_mult, self.unit)
 
     def _num_compare(self, d1, d2):
         ''' Compare digits magnitude, without xcimal separator

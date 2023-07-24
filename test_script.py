@@ -25,22 +25,26 @@ a = Sifr('0.96123724', s)
 b = Sifr('2192.8459', s)
 # Negative rational number
 c = Sifr('-31.261234', s)
-# Positive integer
+# Odd positive integer
 d = Sifr('3', s)
+# Even positive integer
+e = Sifr('4', s)
 # Negative integer
-e = Sifr('-5', s)
+f = Sifr('-5', s)
 
 ad = 0.96123724
 bd = 2192.8459
 cd = -31.261234
 dd = 3.0  # Declare as float to ensure only one type of function for all
-ed = -5.0  # Declare as float to ensure only one type of function for all
+ed = 4.0  # Declare as float to ensure only one type of function for all
+fd = -5.0  # Declare as float to ensure only one type of function for all
 
 number_link = {ad: a,
                bd: b,
                cd: c,
                dd: d,
-               ed: e}
+               ed: e,
+               fd: f}
 
 unary_link = {'abs': (float.__abs__, Sifr.__abs__),
               'neg': (float.__neg__, Sifr.__neg__),

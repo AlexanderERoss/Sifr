@@ -177,34 +177,32 @@ class Sifr(object):
         return Sifr(result, self.ssys)
 
     def __pow__(self, exp):
-        logging.debug("### START MAIN EXPONENTIATION")
-        logging.warning(" Only integers are supported as exponentiation")
-        logging.debug("   " + self.sifr + " to the power of " + exp.sifr)
-        if exp % Sifr(self.ssys.unit, self.ssys) == Sifr(self.ssys.iden,
-                                                         self.ssys):
-            raise SifrScopeException("Exponentiation only supports " +
-                                     "integer exponents")
+        logging.info("### START MAIN EXPONENTIATION")
+        logging.info("   " + self.sifr + " to the power of " + exp.sifr)
 
         raw_result = self.ssys._int_exp(self.__abs__().sifr,
                                         exp.__abs__().sifr)
+        logging.debug("  Raw result without negatives: " + raw_result)
 
         if exp.is_neg:
+            logging.debug("    Exponent is negative")
             inv_result = Sifr(self.ssys._norm_ans(raw_result), self.ssys)
             result = Sifr(self.ssys.unit, self.ssys) / inv_result
-            if self.is_neg:
-                two_mod = exp % (Sifr(self.ssys.unit, self.ssys) +
-                                 Sifr(self.ssys.unit, self.ssys))
-                if two_mod == Sifr(self.ssys.iden, self.ssys):
-                    result = Sifr(self.ssys.neg_sym + result.sifr, self.ssys)
+
         else:
-            result = Sifr(self.ssys._norm_ans(self.ssys.neg_sym + raw_result),
-                          self.ssys)
-            if self.is_neg:
-                two_mod = exp % (Sifr(self.ssys.unit, self.ssys) +
-                                 Sifr(self.ssys.unit, self.ssys))
-                if two_mod == Sifr(self.ssys.iden, self.ssys):
-                    result = Sifr(self.ssys.neg_sym + result.sifr, self.ssys)
-        logging.debug("### END MAIN EXPONENTIATION")
+            logging.debug("    Exponent is positive")
+            result = Sifr(self.ssys._norm_ans(raw_result), self.ssys)
+
+        if self.is_neg:
+            logging.debug("    Number to be exponentiated is negative")
+            two_mod = exp % (Sifr(self.ssys.unit, self.ssys) +
+                             Sifr(self.ssys.unit, self.ssys))
+            if two_mod == Sifr(self.ssys.unit, self.ssys):
+                logging.debug("    Exponent is odd therefore answer " +
+                              "is negative")
+                result = Sifr(self.ssys.neg_sym + result.sifr, self.ssys)
+
+        logging.info("### END MAIN EXPONENTIATION: " + result.sifr)
         return result
 
     # RELATIONAL DUNDERS
