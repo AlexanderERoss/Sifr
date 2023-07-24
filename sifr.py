@@ -149,6 +149,8 @@ class Sifr(object):
 
     def __mod__(self, div_no):
         logging.debug("### START MAIN MOD")
+        logging.debug("    Seeing what is left over when int " + div_no.sifr +
+                      "'s are removed from " + self.sifr)
         raw_result = self.ssys._times_in_num(self.__abs__().sifr,
                                              div_no.__abs__().sifr)[1]
         if div_no.is_neg:
@@ -177,6 +179,7 @@ class Sifr(object):
     def __pow__(self, exp):
         logging.debug("### START MAIN EXPONENTIATION")
         logging.warning(" Only integers are supported as exponentiation")
+        logging.debug("   " + self.sifr + " to the power of " + exp.sifr)
         if exp % Sifr(self.ssys.unit, self.ssys) == Sifr(self.ssys.iden,
                                                          self.ssys):
             raise SifrScopeException("Exponentiation only supports " +
@@ -207,6 +210,7 @@ class Sifr(object):
     # RELATIONAL DUNDERS
     def __eq__(self, d):
         logging.debug("### START MAIN EQUAL")
+        logging.debug("    Comparing " + self.sifr + " and " + d.sifr)
         if not self.is_neg and not d.is_neg:
             _, equal = self.ssys._orderer(self.sifr, d.sifr)
         elif self.is_neg and d.is_neg:

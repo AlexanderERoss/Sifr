@@ -13,10 +13,6 @@ import pdb
 # Make breakpoint shorter
 bp = pdb.set_trace
 
-# DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
-log_level = logging.ERROR
-logging.basicConfig(level=log_level)
-
 
 # DECORATORS
 def mask_logging(func):
@@ -294,7 +290,7 @@ class SifrSystem(object):
                 result = d.replace(sep, '') + self.digit_list[0]
         else:
             result = self._raise_by_base(self._raise_by_base(d, 1), exp - 1)
-        return result
+        return self._norm_ans(result)
 
     def knuth_up(self, d1, d2, algo, iden):
         '''algo is add for multiply, and algo is multiply for exponentiation'''
@@ -388,11 +384,11 @@ class SifrSystem(object):
         modulus = full_subt(numer, prod)
         logging.debug("     ##### Remainder: " + prod)
         logging.debug("    ##### END TIMES IN NUM COUNT")
-        return quot.split(self.sep_point)[0], modulus
+        return quot.split(self.sep_point)[0], self._norm_ans(modulus)
 
     def _base_div(self, numer, denom):
-        logging.debug(" ### START BASE DIV")
-        logging.debug("  # Dividing " + numer + " by " + denom)
+        logging.info(" ### START BASE DIV")
+        logging.info("  # Dividing " + numer + " by " + denom)
 
         # @mask_logging
         def lil_div(num, den):
@@ -402,7 +398,7 @@ class SifrSystem(object):
         xcim_count = 1
         first_div, modls = lil_div(numer, denom)
         divd = first_div + self.sep_point
-        logging.debug("  Main number: " + self._norm_ans(divd))
+        logging.debug("  Main number: " + divd)
         logging.debug("  Modulus to be divided in xcimal: " + modls)
 
         while not mod_zero and xcim_count <= self.xcimal_places + 1:
@@ -419,7 +415,7 @@ class SifrSystem(object):
 
         if xcim_count == self.xcimal_places + 1:
             divd = self.round(divd, self.xcimal_places)
-        logging.debug(" ### END BASE DIV")
+        logging.info(" ### END BASE DIV")
         return self._norm_ans(divd)
 
     def _int_exp(self, base, exp):
@@ -510,8 +506,8 @@ class SifrSystem(object):
         return round_function(num, round_level)
 
     def round_half_to_inf(self, num, round_level):
-        logging.debug(" ### START HALF-TO-INF ROUNDING ")
         '''Rounds a non-negative number to the given number of xcimal places'''
+        logging.info(" ### START HALF-TO-INF ROUNDING ")
         main_no, xcimal_no = self._dec_split(num)
         if not len(xcimal_no) <= round_level:
             logging.debug("    Number to be rounded")
@@ -541,10 +537,12 @@ class SifrSystem(object):
         else:
             logging.debug("    Number already in rounding bounds")
             rounded = num
-        logging.debug(" ### END HALF-TO-INF ROUNDING ")
+        logging.info(" ### END HALF-TO-INF ROUNDING: "
+                     + self._norm_ans(rounded))
         return self._norm_ans(rounded)
 
     def _norm_ans(self, raw_ans: str):
+        logging.info("### STARTING NORMALIZED ANSWER")
         raw_ans = raw_ans.strip()
 
         # Fixes just decimal point being there
@@ -571,5 +569,9 @@ class SifrSystem(object):
         while norm_ans[-1:] == self.iden and norm_ans[-2:] != (self.sep_point
                                                                + self.iden):
             norm_ans = norm_ans[:-1]
-        logging.debug("  ### NORMALIZED ANSWER")
+        # Fix leading zeroes
+        while norm_ans[:1] == self.iden and norm_ans[:2] != (self.iden
+                                                             + self.sep_point):
+            norm_ans = norm_ans[1:]
+        logging.info("### FINISHED NORMALIZED ANSWER: " + norm_ans)
         return norm_ans
