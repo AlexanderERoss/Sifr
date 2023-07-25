@@ -18,7 +18,6 @@ import logging
 import pdb
 
 from systems import SifrSystem
-from systems import SifrScopeException
 
 # Make breakpoint shorter
 bp = pdb.set_trace

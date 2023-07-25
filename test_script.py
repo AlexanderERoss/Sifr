@@ -14,7 +14,7 @@ from decimal import Decimal, getcontext
 
 # DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
 log_level = logging.WARNING
-PRECISION = 12
+PRECISION = 20
 
 logging.getLogger().setLevel(log_level)
 
@@ -34,7 +34,7 @@ e = Sifr('4', s)
 f = Sifr('-5', s)
 
 # Set precision for decimals
-getcontext().prec = PRECISION*2
+getcontext().prec = PRECISION
 
 ad = Decimal('0.96123724')
 bd = Decimal('219.8459')
@@ -73,17 +73,17 @@ compare_link = {'eq': (Decimal.__eq__, Sifr.__eq__),
                 }
 
 
-def float_formater(decml):
-    formatted = s._norm_ans(('{:.' + str(PRECISION) + 'f}').format(decml))
-    formatted = formatted.replace('-0.0', '0.0')
+def decimal_formater(decml):
+    formatted = s._norm_ans(('{:.' + str(PRECISION//2) + 'f}').format(decml))
+    # formatted = formatted if formatted != '-0.0' else '0.0'
     return formatted
 
 
 # Test functions
 def unary_tester(sifr, sifr_op, num, num_op):
     try:
-        sifr_result = sifr_op(sifr).sifr
-        float_result = float_formater(num_op(num))
+        sifr_result = sifr_op(sifr).round(PRECISION//2).sifr
+        float_result = decimal_formater(num_op(num))
         try:
             assert sifr_result == float_result, \
                 "Sifr result: " + sifr_result + \
@@ -101,8 +101,8 @@ def unary_tester(sifr, sifr_op, num, num_op):
 
 def binary_tester(sifr1, sifr2, sifr_op, num1, num2, num_op):
     try:
-        sifr_result = sifr_op(sifr1, sifr2).sifr
-        float_result = float_formater(num_op(num1, num2))
+        sifr_result = sifr_op(sifr1, sifr2).round(PRECISION//2).sifr
+        float_result = decimal_formater(num_op(num1, num2))
         try:
             assert sifr_result == float_result, \
                 "Sifr result: " + sifr_result + \

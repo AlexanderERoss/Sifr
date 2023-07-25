@@ -90,8 +90,8 @@ class SifrSystem(object):
         carry = True
         return self.digit_list[-1], carry
 
-        ''' Splits a decimal (non-negative) into it's consituent parts'''
     def _dec_split(self, d):
+        ''' Splits a decimal (non-negative) into it's consituent parts'''
         d_parts = d.split(self.sep_point)
         d_num = d_parts[0]
         d_xcimal = self.iden if len(d_parts) == 1 else d_parts[1]
@@ -562,11 +562,7 @@ class SifrSystem(object):
             norm_ans = self.iden + self.sep_point + self.iden
         else:
             norm_ans = raw_ans
-        # Fixes cases where zero to be non-negative form of zero
-        if (norm_ans == (self.neg_sym + self.iden) or
-            norm_ans == (self.neg_sym + self.iden +
-                         self.sep_point + self.iden)):
-            norm_ans = norm_ans.replace(self.neg_sym + self.iden, self.iden)
+
         # Intentionally chosen to always have a zero to indicate that this
         # type is always capable of behaving as a float.
         if norm_ans[-1] == self.sep_point:
@@ -583,5 +579,12 @@ class SifrSystem(object):
         while norm_ans[:1] == self.iden and norm_ans[:2] != (self.iden
                                                              + self.sep_point):
             norm_ans = norm_ans[1:]
+
+        # Fixes cases where zero to be non-negative form of zero
+        if (norm_ans == (self.neg_sym + self.iden) or
+            norm_ans == (self.neg_sym + self.iden +
+                         self.sep_point + self.iden)):
+            norm_ans = self.iden + self.sep_point + self.iden
+
         logging.info("### FINISHED NORMALIZED ANSWER: " + norm_ans)
         return norm_ans
