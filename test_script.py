@@ -10,6 +10,7 @@ import logging
 from systems import SifrSystem
 from systems import SifrScopeException
 from sifr import Sifr
+from decimal import Decimal, getcontext
 
 # DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
 log_level = logging.WARNING
@@ -22,7 +23,7 @@ s = SifrSystem(xcimal_places=PRECISION)
 # Sub one positive rational number
 a = Sifr('0.96123724', s)
 # Large positive rational number
-b = Sifr('2192.8459', s)
+b = Sifr('219.8459', s)
 # Negative rational number
 c = Sifr('-31.261234', s)
 # Odd positive integer
@@ -32,12 +33,16 @@ e = Sifr('4', s)
 # Negative integer
 f = Sifr('-5', s)
 
-ad = 0.96123724
-bd = 2192.8459
-cd = -31.261234
-dd = 3.0  # Declare as float to ensure only one type of function for all
-ed = 4.0  # Declare as float to ensure only one type of function for all
-fd = -5.0  # Declare as float to ensure only one type of function for all
+# Set precision for decimals
+getcontext().prec = PRECISION*2
+
+ad = Decimal('0.96123724')
+bd = Decimal('219.8459')
+cd = Decimal('-31.261234')
+dd = Decimal('3.0')
+ed = Decimal('4.0')
+fd = Decimal('-5.0')
+
 
 number_link = {ad: a,
                bd: b,
@@ -46,40 +51,46 @@ number_link = {ad: a,
                ed: e,
                fd: f}
 
-unary_link = {'abs': (float.__abs__, Sifr.__abs__),
-              'neg': (float.__neg__, Sifr.__neg__),
-              'pos': (float.__pos__, Sifr.__pos__)
+unary_link = {'abs': (Decimal.__abs__, Sifr.__abs__),
+              'neg': (Decimal.__neg__, Sifr.__neg__),
+              'pos': (Decimal.__pos__, Sifr.__pos__)
               }
 
-arith_link = {'add': (float.__add__, Sifr.__add__),
-              'sub': (float.__sub__, Sifr.__sub__),
-              'mul': (float.__mul__, Sifr.__mul__),
-              'floordiv': (float.__floordiv__, Sifr.__floordiv__),
-              'mod': (float.__mod__, Sifr.__mod__),
-              'truediv': (float.__truediv__, Sifr.__truediv__),
-              'pow': (float.__pow__, Sifr.__pow__)
+arith_link = {'add': (Decimal.__add__, Sifr.__add__),
+              'sub': (Decimal.__sub__, Sifr.__sub__),
+              'mul': (Decimal.__mul__, Sifr.__mul__),
+              'floordiv': (Decimal.__floordiv__, Sifr.__floordiv__),
+              'mod': (Decimal.__mod__, Sifr.__mod__),
+              'truediv': (Decimal.__truediv__, Sifr.__truediv__),
+              'pow': (Decimal.__pow__, Sifr.__pow__)
               }
 
-compare_link = {'eq': (float.__eq__, Sifr.__eq__),
-                'gt': (float.__gt__, Sifr.__gt__),
-                'lt': (float.__lt__, Sifr.__lt__),
-                'ge': (float.__ge__, Sifr.__ge__),
-                'le': (float.__le__, Sifr.__le__)
+compare_link = {'eq': (Decimal.__eq__, Sifr.__eq__),
+                'gt': (Decimal.__gt__, Sifr.__gt__),
+                'lt': (Decimal.__lt__, Sifr.__lt__),
+                'ge': (Decimal.__ge__, Sifr.__ge__),
+                'le': (Decimal.__le__, Sifr.__le__)
                 }
+
+
+def float_formater(decml):
+    formatted = s._norm_ans(('{:.' + str(PRECISION) + 'f}').format(decml))
+    formatted = formatted.replace('-0.0', '0.0')
+    return formatted
 
 
 # Test functions
 def unary_tester(sifr, sifr_op, num, num_op):
     try:
-        sifr_result = sifr_op(sifr)
-        float_result = num_op(num)
+        sifr_result = sifr_op(sifr).sifr
+        float_result = float_formater(num_op(num))
         try:
-            assert sifr_result.sifr == str(round(float_result, PRECISION)), \
-                "Sifr result: " + sifr_result.sifr + \
-                " is not equal to float result: " + \
-                str(round(float_result, PRECISION))
+            assert sifr_result == float_result, \
+                "Sifr result: " + sifr_result + \
+                " is not equal to decimal result: " + \
+                float_result
             print("    PASS")
-            print("    Result: " + sifr_result.sifr)
+            print("    Result: " + sifr_result)
         except AssertionError as aser:
             print("    FAIL")
             print("    " + str(aser))
@@ -90,15 +101,15 @@ def unary_tester(sifr, sifr_op, num, num_op):
 
 def binary_tester(sifr1, sifr2, sifr_op, num1, num2, num_op):
     try:
-        sifr_result = sifr_op(sifr1, sifr2)
-        float_result = num_op(num1, num2)
+        sifr_result = sifr_op(sifr1, sifr2).sifr
+        float_result = float_formater(num_op(num1, num2))
         try:
-            assert sifr_result.sifr == str(round(float_result, PRECISION)), \
-                "Sifr result: " + sifr_result.sifr + \
-                " is not equal to float result: " + \
-                str(round(float_result, PRECISION))
+            assert sifr_result == float_result, \
+                "Sifr result: " + sifr_result + \
+                " is not equal to decimal result: " + \
+                float_result
             print("    PASS")
-            print("    Result: " + sifr_result.sifr)
+            print("    Result: " + sifr_result)
         except AssertionError as aser:
             print("    FAIL")
             print("    " + str(aser))
@@ -114,7 +125,7 @@ def rel_tester(sifr1, sifr2, sifr_op, num1, num2, num_op):
         try:
             assert sifr_result == float_result, \
                 "Sifr result: " + str(sifr_result) + \
-                " is not float result: " + \
+                " is not decimal result: " + \
                 str(float_result)
             print("    PASS")
             print("    Result: " + str(sifr_result))
