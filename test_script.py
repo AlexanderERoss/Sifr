@@ -51,6 +51,32 @@ number_link = {ad: a,
                ed: e,
                fd: f}
 
+
+def dec_mod(n1, n2):
+    '''Fixes decimals poorlly functioning modulus function'''
+    dec_zero = Decimal('0')
+    n1_neg = n1 < dec_zero
+    n2_neg = n2 < dec_zero
+
+    base_mod = n1 % n2
+    divs_exactly = base_mod == dec_zero
+    if not divs_exactly and ((n1_neg and not n2_neg) or
+                             (n2_neg and not n1_neg)):
+        return (n1 % n2) + n2
+    else:
+        return n1 % n2
+
+
+def dec_floordiv(n1, n2):
+    '''Fixes decimals poorlly functioning modulus function'''
+    base_div = n1 / n2
+    base_floordiv = n1 // n2
+    if base_div < Decimal('0') and base_div != base_floordiv:
+        return base_floordiv - Decimal('1')
+    else:
+        return base_floordiv
+
+
 unary_link = {'abs': (Decimal.__abs__, Sifr.__abs__),
               'neg': (Decimal.__neg__, Sifr.__neg__),
               'pos': (Decimal.__pos__, Sifr.__pos__)
@@ -59,8 +85,8 @@ unary_link = {'abs': (Decimal.__abs__, Sifr.__abs__),
 arith_link = {'add': (Decimal.__add__, Sifr.__add__),
               'sub': (Decimal.__sub__, Sifr.__sub__),
               'mul': (Decimal.__mul__, Sifr.__mul__),
-              'floordiv': (Decimal.__floordiv__, Sifr.__floordiv__),
-              'mod': (Decimal.__mod__, Sifr.__mod__),
+              'floordiv': (dec_floordiv, Sifr.__floordiv__),
+              'mod': (dec_mod, Sifr.__mod__),
               'truediv': (Decimal.__truediv__, Sifr.__truediv__),
               'pow': (Decimal.__pow__, Sifr.__pow__)
               }
