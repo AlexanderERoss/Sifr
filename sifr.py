@@ -1,7 +1,7 @@
 # #############################################################################
 # Created by Alexander Ross
 # 2nd July 2022
-# Version 0.2
+# Version 0.3
 # #############################################################################
 # Sifr is the main script which calculates the main arithmetic of the
 # generalised number system.
