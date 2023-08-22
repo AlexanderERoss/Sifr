@@ -32,6 +32,8 @@ d = Sifr('3', s)
 e = Sifr('4', s)
 # Negative integer
 f = Sifr('-5', s)
+# Double digit positive integer
+g = Sifr('13', s)
 
 # Set precision for decimals
 getcontext().prec = PRECISION
@@ -42,6 +44,7 @@ cd = Decimal('-31.261234')
 dd = Decimal('3.0')
 ed = Decimal('4.0')
 fd = Decimal('-5.0')
+gd = Decimal('23.0')
 
 
 number_link = {ad: a,
@@ -49,7 +52,8 @@ number_link = {ad: a,
                cd: c,
                dd: d,
                ed: e,
-               fd: f}
+               fd: f,
+               gd: g}
 
 
 def dec_mod(n1, n2):

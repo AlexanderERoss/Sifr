@@ -1,4 +1,5 @@
 # #############################################################################
+# SIFRSYSTEM
 # This file contains system. The primary one being the SifrSystem class which
 # defines an Arabic-like numbering system that is universally definable by
 # allocating neg, xcimal separators etc. and assigning the sequence of
