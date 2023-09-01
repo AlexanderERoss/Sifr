@@ -44,12 +44,12 @@ cd = Decimal('-31.261234')
 dd = Decimal('3.0')
 ed = Decimal('4.0')
 fd = Decimal('-5.0')
-gd = Decimal('23.0')
+gd = Decimal('13.0')
 
 
-number_link = {ad: a,
-               bd: b,
-               cd: c,
+number_link = {#ad: a,
+               #bd: b,
+               #cd: c,
                dd: d,
                ed: e,
                fd: f,

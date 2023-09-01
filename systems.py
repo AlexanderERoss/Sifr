@@ -295,14 +295,27 @@ class SifrSystem(object):
             result = self._raise_by_base(self._raise_by_base(d, 1), exp - 1)
         return self._norm_ans(result)
 
+    def _do_exp_base_times(self, base_exp, input1, input2, algo):
+
+        @mask_logging
+        def masked_algo(x, y):
+            return algo(x, y)
+
+        result = input1
+        if base_exp == 0:
+            result = algo(result, input2)
+        else:
+            for _ in self.digit_list:
+                result = self._do_exp_base_times(base_exp - 1,
+                                                 result,
+                                                 input2,
+                                                 masked_algo)
+        return result
+
     def knuth_up(self, d1, d2, algo, iden):
         '''algo is add for multiply, and algo is multiply for exponentiation'''
         logging.debug("   Start Knuth up")
         result = iden
-
-        @mask_logging
-        def _masked_raise_by_base(num, exp):
-            return self._raise_by_base(num, exp)
 
         # Loop through each xcimal to apply 'algo' that number of times
         fig_count = 0
@@ -312,7 +325,10 @@ class SifrSystem(object):
             for dig in self.digit_list:
                 if dig == d2_dig:
                     break
-                result = algo(result, _masked_raise_by_base(d1, fig_count))
+                result = self._do_exp_base_times(fig_count,
+                                                 result,
+                                                 d1,
+                                                 algo)
                 logging.debug("      Knuth running result: " + result)
             fig_count += 1
         logging.debug("   End Knuth up")
@@ -457,7 +473,7 @@ class SifrSystem(object):
 
         for dig_ind in range(min(len(d1), len(d2))):
             equal = False
-            for dig in self.digit_list[::-1]: 
+            for dig in self.digit_list[::-1]:
                 if d1[dig_ind] == dig and d2[dig_ind] == dig:
                     equal = True
                     to_break = False
