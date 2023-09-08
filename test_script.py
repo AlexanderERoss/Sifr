@@ -6,6 +6,8 @@
 # #############################################################################
 
 import logging
+import multiprocessing
+import time
 
 from systems import SifrSystem
 from systems import SifrScopeException
@@ -15,6 +17,7 @@ from decimal import Decimal, getcontext
 # DEBUG, INFO, WARNING, ERROR, CRITICAL are the values for logging values
 log_level = logging.WARNING
 PRECISION = 20
+TIMEOUT = 15000  # In milliseconds
 
 logging.getLogger().setLevel(log_level)
 
@@ -47,13 +50,41 @@ fd = Decimal('-5.0')
 gd = Decimal('13.0')
 
 
-number_link = {#ad: a,
-               #bd: b,
-               #cd: c,
+number_link = {ad: a,
+               bd: b,
+               cd: c,
                dd: d,
                ed: e,
                fd: f,
                gd: g}
+
+
+class ExcessTimeException(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(message)
+
+
+def time_tester(test_func):
+    def wrapper(*args):
+        start_time = time.time()
+        proc = multiprocessing.Process(target=test_func, args=[*args])
+        proc.start()
+        proc.join(TIMEOUT/1000)
+        end_time = time.time()
+        try:
+            if not proc.is_alive():
+                print("  Time taken: " + str(end_time - start_time)
+                      + " seconds\n")
+            else:
+                proc.terminate()
+                print('    TIMEOUT')
+                raise ExcessTimeException('   Timeout of ' + str(TIMEOUT)
+                                          + 'ms exceeded\n')
+        except ExcessTimeException as ete:
+            print(ete.message)
+        return proc
+    return wrapper
 
 
 def dec_mod(n1, n2):
@@ -110,6 +141,7 @@ def decimal_formater(decml):
 
 
 # Test functions
+@time_tester
 def unary_tester(sifr, sifr_op, num, num_op):
     try:
         sifr_result = sifr_op(sifr).round(PRECISION//2).sifr
@@ -129,6 +161,7 @@ def unary_tester(sifr, sifr_op, num, num_op):
         print("    " + sse.message)
 
 
+@time_tester
 def binary_tester(sifr1, sifr2, sifr_op, num1, num2, num_op):
     try:
         sifr_result = sifr_op(sifr1, sifr2).round(PRECISION//2).sifr
@@ -148,6 +181,7 @@ def binary_tester(sifr1, sifr2, sifr_op, num1, num2, num_op):
         print("    " + sse.message)
 
 
+@time_tester
 def rel_tester(sifr1, sifr2, sifr_op, num1, num2, num_op):
     try:
         sifr_result = sifr_op(sifr1, sifr2)
