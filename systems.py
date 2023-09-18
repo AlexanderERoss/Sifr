@@ -312,10 +312,14 @@ class SifrSystem(object):
                                                  masked_algo)
         return result
 
-    def knuth_up(self, d1, d2, algo, iden):
+    def knuth_up(self, d1, d2, algo, iden, quick_mul_mode=False):
         '''algo is add for multiply, and algo is multiply for exponentiation'''
         logging.debug("   Start Knuth up")
         result = iden
+
+        @mask_logging
+        def _masked_raise_by_base(d, exp):
+            return self._raise_by_base(d, exp)
 
         # Loop through each xcimal to apply 'algo' that number of times
         fig_count = 0
@@ -325,10 +329,13 @@ class SifrSystem(object):
             for dig in self.digit_list:
                 if dig == d2_dig:
                     break
-                result = self._do_exp_base_times(fig_count,
-                                                 result,
-                                                 d1,
-                                                 algo)
+                if quick_mul_mode:
+                    result = algo(result, _masked_raise_by_base(d1, fig_count))
+                else:
+                    result = self._do_exp_base_times(fig_count,
+                                                     result,
+                                                     d1,
+                                                     algo)
                 logging.debug("      Knuth running result: " + result)
             fig_count += 1
         logging.debug("   End Knuth up")
@@ -350,14 +357,19 @@ class SifrSystem(object):
             return self._dec_combine(x, y, self._base_add_alg)[0]
 
         logging.debug("  Multiplying " + d2 + " by " + d1_num)
-        ans_num = self.knuth_up(d2, d1_num, full_add, self.iden)
+        ans_num = self.knuth_up(d2,
+                                d1_num,
+                                full_add,
+                                self.iden,
+                                quick_mul_mode=True)
         logging.debug("  Answer main number: " + ans_num)
 
         logging.debug("  Multiplying " + d2 + " by " + d1_xcimal)
         ans_xcimal = self.knuth_up(d2,
                                    d1_xcimal,
                                    full_add,
-                                   self.iden)
+                                   self.iden,
+                                   quick_mul_mode=True)
         logging.debug("  Answer xcimal: " + ans_xcimal)
 
         # Update ans xcimal with right xcimal point
