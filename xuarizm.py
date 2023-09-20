@@ -16,6 +16,7 @@ from systems import SifrSystem
 
 # Mae breakpoint shorter
 bp = pdb.set_trace
+logging.getLogger().setLevel(logging.DEBUG)
 
 
 # DECORATORS
@@ -78,11 +79,38 @@ class Constants(object):
 
         return Xuarizm(pi_algo, s, upper_bound=upper_bound).arith_series()
 
-    def return_phi(self):
-        pass
+    def return_phi(self, upper_bound):
+        s = self.ssys
+        fact = Formulae.factorial
 
-    def return_e(self):
-        pass
+        zero = Sifr(s.iden, s)
+        one = Sifr(s.unit, s)
+        two = one + one
+        three = two + one
+        four = two + two
+        six = four + two
+        eight = four + four
+        thirteen = six + six + one
+
+        def phi_algo(k):
+            return (((-one)**(k + one) * fact(two * k + one)) /
+                    (fact(k + two) * fact(k) * four**(two * k + three)))
+
+        series_result = Xuarizm(phi_algo,
+                                s,
+                                upper_bound=upper_bound).arith_series()
+
+        print(phi_algo(zero))
+        # return thirteen / eight + series_result
+        return series_result
+
+    def return_e(self, upper_bound):
+        s = self.ssys
+
+        def e_algo(k):
+            return Sifr(s.unit, s) / Formulae.factorial(k)
+
+        return Xuarizm(e_algo, s, upper_bound=upper_bound).arith_series()
 
 
 class Xuarizm(object):
@@ -119,17 +147,16 @@ class Xuarizm(object):
 
     def arith_series(self):
         term = self.lbnd
-        result = Sifr(self.ssys.iden, self.ssys)
-
-        logging.debug("XUARIZM: Starting term: " + result.sifr)
+        series_result = Sifr(self.ssys.iden, self.ssys)
+        logging.debug("XUARIZM: Starting term: " + series_result.sifr)
         while self.m_le(term, self.ubnd):
             added_value = self.algo(term)
             logging.debug("    XUARIZM: " + added_value.sifr)
-            result = self.m_add(result, added_value)
-            logging.debug("  XUARIZM: Running term: " + result.sifr)
+            series_result = added_value
+            logging.debug("  XUARIZM: Running term: " + series_result.sifr)
             term = self.m_add(term, self.step)
 
-        return result
+        return series_result
 
     def rational_series(self):
         term = self.lbnd
