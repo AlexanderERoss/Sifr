@@ -23,31 +23,34 @@ logging.getLogger().setLevel(log_level)
 
 s = SifrSystem(xcimal_places=PRECISION)
 
+# Zero
+a = Sifr('0', s)
 # Sub one positive rational number
-a = Sifr('0.96123724', s)
+b = Sifr('0.96123724', s)
 # Large positive rational number
-b = Sifr('219.8459', s)
+c = Sifr('219.8459', s)
 # Negative rational number
-c = Sifr('-31.261234', s)
+d = Sifr('-31.261234', s)
 # Odd positive integer
-d = Sifr('3', s)
+e = Sifr('3', s)
 # Even positive integer
-e = Sifr('4', s)
+f = Sifr('4', s)
 # Negative integer
-f = Sifr('-5', s)
+g = Sifr('-5', s)
 # Double digit positive integer
-g = Sifr('13', s)
+h = Sifr('13', s)
 
 # Set precision for decimals
 getcontext().prec = PRECISION
 
-ad = Decimal('0.96123724')
-bd = Decimal('219.8459')
-cd = Decimal('-31.261234')
-dd = Decimal('3.0')
-ed = Decimal('4.0')
-fd = Decimal('-5.0')
-gd = Decimal('13.0')
+ad = Decimal('0.0')
+bd = Decimal('0.96123724')
+cd = Decimal('219.8459')
+dd = Decimal('-31.261234')
+ed = Decimal('3.0')
+fd = Decimal('4.0')
+gd = Decimal('-5.0')
+hd = Decimal('13.0')
 
 
 number_link = {ad: a,
@@ -56,7 +59,8 @@ number_link = {ad: a,
                dd: d,
                ed: e,
                fd: f,
-               gd: g}
+               gd: g,
+               hd: h}
 
 
 class ExcessTimeException(Exception):

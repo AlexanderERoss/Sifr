@@ -395,6 +395,11 @@ class SifrSystem(object):
     def _times_in_num(self, numer, denom):
         logging.debug("    ##### ḂEGIN TIMES IN NUM COUNT")
         logging.debug("     ##### Dividing " + numer + " by " + denom)
+
+        if self._orderer(denom, self.iden)[1]:
+            raise SifrScopeException("Exponentiation only implemented " +
+                                     "for integers at this point")
+
         unit = self.digit_list[1]
         prod = self.iden
         quot = self.iden
