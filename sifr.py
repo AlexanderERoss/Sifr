@@ -134,15 +134,16 @@ class Sifr(object):
 
     def __floordiv__(self, div_no):
         logging.debug("### START FLOOR DIV")
-        raw_result = self.ssys._times_in_num(self.__abs__().sifr,
-                                             div_no.__abs__().sifr)[0]
+        raw_result, mod = self.ssys._times_in_num(self.__abs__().sifr,
+                                                  div_no.__abs__().sifr)
         if (self.is_neg and div_no.is_neg) or (not self.is_neg
                                                and not div_no.is_neg):
             result = Sifr(self.ssys._norm_ans(raw_result), self.ssys)
         else:
             result = Sifr(self.ssys._norm_ans(self.ssys.neg_sym + raw_result),
                           self.ssys)
-            result = result - Sifr(self.ssys.digit_list[1], self.ssys)
+            if Sifr(mod, self.ssys) != Sifr(self.ssys.iden, self.ssys):
+                result = result - Sifr(self.ssys.digit_list[1], self.ssys)
         logging.debug("### END FLOOR DIV")
         return result
 
@@ -158,7 +159,8 @@ class Sifr(object):
         else:
             result = Sifr(self.ssys._norm_ans(raw_result),
                           self.ssys)
-        if self.is_neg != div_no.is_neg:
+        if self.is_neg != div_no.is_neg and result != Sifr(self.ssys.iden,
+                                                           self.ssys):
             result = div_no - result
         logging.debug("### END MAIN MOD")
         return result

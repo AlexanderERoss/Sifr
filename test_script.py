@@ -21,7 +21,7 @@ TIMEOUT = 15000  # In milliseconds
 
 logging.getLogger().setLevel(log_level)
 
-s = SifrSystem(xcimal_places=PRECISION)
+s = SifrSystem(xcimal_places=PRECISION*2)
 
 # Zero
 a = Sifr('0', s)
@@ -41,7 +41,7 @@ g = Sifr('-5', s)
 h = Sifr('13', s)
 
 # Set precision for decimals
-getcontext().prec = PRECISION
+getcontext().prec = PRECISION * 2
 
 ad = Decimal('0.0')
 bd = Decimal('0.96123724')

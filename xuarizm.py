@@ -102,7 +102,7 @@ class Constants(object):
 
         print(phi_algo(zero))
         # return thirteen / eight + series_result
-        return series_result
+        return thirteen / eight + series_result
 
     def return_e(self, upper_bound):
         s = self.ssys
@@ -152,7 +152,7 @@ class Xuarizm(object):
         while self.m_le(term, self.ubnd):
             added_value = self.algo(term)
             logging.debug("    XUARIZM: " + added_value.sifr)
-            series_result = added_value
+            series_result = self.m_add(series_result, added_value)
             logging.debug("  XUARIZM: Running term: " + series_result.sifr)
             term = self.m_add(term, self.step)
 
