@@ -397,8 +397,7 @@ class SifrSystem(object):
         logging.debug("     ##### Dividing " + numer + " by " + denom)
 
         if self._orderer(denom, self.iden)[1]:
-            raise SifrScopeException("Exponentiation only implemented " +
-                                     "for integers at this point")
+            raise SifrScopeException("Zero Division Error")
 
         unit = self.digit_list[1]
         prod = self.iden
