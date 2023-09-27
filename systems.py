@@ -466,6 +466,13 @@ class SifrSystem(object):
         if self._orderer(exp_xcim, self.iden)[0]:
             raise SifrScopeException("Exponentiation only implemented " +
                                      "for integers at this point")
+
+        base_is_zero = self._orderer(base, self.iden)[1]
+        exp_is_zero = self._orderer(exp, self.iden)[1]
+        if base_is_zero and exp_is_zero:
+            raise SifrScopeException("Undefined Error: Zero to the power of " +
+                                     "zero is undefined")
+
         base_num, base_xcim = self._dec_split(base)
 
         @mask_logging
