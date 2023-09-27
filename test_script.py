@@ -41,7 +41,7 @@ g = Sifr('-5', s)
 h = Sifr('13', s)
 
 # Set precision for decimals
-getcontext().prec = PRECISION * 2
+getcontext().prec = PRECISION * 3
 
 ad = Decimal('0.0')
 bd = Decimal('0.96123724')
