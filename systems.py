@@ -74,6 +74,7 @@ class SifrSystem(object):
                 return digit, carry
             if digit == prev_no:
                 disp_next = True
+        # If there is no successor, then return identity
         carry = True
         return self.digit_list[0], carry
 
@@ -88,6 +89,7 @@ class SifrSystem(object):
                 return digit, carry
             if digit == prev_no:
                 disp_next = True
+        # If there is no successor, then return highest number
         carry = True
         return self.digit_list[-1], carry
 
@@ -102,7 +104,7 @@ class SifrSystem(object):
     def _base_add_alg(self, d1, d2):
         '''Adds two sifr sequences to the length of the maximum digit.
         I.e. use the carry returned if the digit needs to start with a one as
-        this onlyl adds to the length of the sequence.
+        this only adds to the length of the sequence.
         Returns: [Added sequence, next digit should be carried]'''
 
         logging.debug("  ### START BASE ADD")
@@ -188,6 +190,7 @@ class SifrSystem(object):
 
         logging.debug("  ### START BASE SUBTRACT")
         result = ''
+
         d1, d2 = self._pad_iden(d1, d2, end=False)
         logging.debug("   Subtracting " + d2 + " from " + d1)
 
@@ -250,8 +253,12 @@ class SifrSystem(object):
         if xc_carry:
             logging.debug("      Xcimal carries")
             num, temp_carry = arith_function(num1, self.unit)
-            num = num if not temp_carry else iden_next + num
+            # Calculates extra digits to be put before answer to ensure correct
+            # subtraction
+            extra_digits = len(num2) - len(num) if len(num2) > len(num) else 0
+            num = num if not temp_carry else iden_next*extra_digits + num
             num, carry = arith_function(num, num2)
+            carry = temp_carry or carry
         else:
             logging.debug("      Xcimal doesn't carry")
             num, carry = arith_function(num1, num2)
@@ -619,6 +626,10 @@ class SifrSystem(object):
         while norm_ans[:1] == self.iden and norm_ans[:2] != (self.iden
                                                              + self.sep_point):
             norm_ans = norm_ans[1:]
+
+        # Fix neg then point
+        if norm_ans[:2] == (self.neg_sym + self.sep_point):
+            norm_ans = self.neg_sym + self.iden + self.sep_point + norm_ans[2:]
 
         # Fixes cases where zero to be non-negative form of zero
         if (norm_ans == (self.neg_sym + self.iden) or

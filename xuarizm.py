@@ -83,7 +83,6 @@ class Constants(object):
         s = self.ssys
         fact = Formulae.factorial
 
-        zero = Sifr(s.iden, s)
         one = Sifr(s.unit, s)
         two = one + one
         three = two + one
@@ -100,7 +99,6 @@ class Constants(object):
                                 s,
                                 upper_bound=upper_bound).arith_series()
 
-        print(phi_algo(zero))
         # return thirteen / eight + series_result
         return thirteen / eight + series_result
 

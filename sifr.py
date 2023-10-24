@@ -91,8 +91,8 @@ class Sifr(object):
             logging.info("  Only one of either numbers is negative, " +
                          "to subtract absolute values")
             b_neg = self.ssys._base_subt_alg
-            self_mag = self.sifr if not self.is_neg else self.sifr[1:]
-            add_no_mag = add_no.sifr if not add_no.is_neg else add_no.sifr[1:]
+            self_mag = self.__abs__().sifr
+            add_no_mag = add_no.__abs__().sifr
             added, zero_crossed = dec_comb(self_mag, add_no_mag, b_neg)
             if self.is_neg and zero_crossed:
                 result = Sifr(norm(added), self.ssys)
