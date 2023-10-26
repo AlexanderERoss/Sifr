@@ -43,7 +43,7 @@ class SifrSystem(object):
         sep_not_in_digits = sep_point not in digit_list
         neg_not_in_digits = neg_sym not in digit_list
         if unique_digits and sep_not_in_digits and neg_not_in_digits:
-            raise Exception("The list off characters is not unique " +
+            raise Exception("The list of characters is not unique " +
                             "and thus can't be used as a numbering system")
         self.digit_list = digit_list
         self.sep_point = sep_point
@@ -283,7 +283,7 @@ class SifrSystem(object):
         else:
             result = num + self.sep_point + xcimal
 
-        logging.debug(" ### END DEC COMBINE")
+        logging.debug(" ### END DEC COMBINE: " + result.strip(self.iden))
         return result.strip(self.iden), zero_cross
 
     def _raise_by_base(self, d, exp):
@@ -493,7 +493,6 @@ class SifrSystem(object):
         Always starts with first digit, to be used for numbers with same
         lengths or not necessarily equal xcimals. '''
 
-        logging.debug("  ### START NUM COMPARE")
         if len(d1) > len(d2):
             longer_no = 'd1'
         elif len(d1) == len(d2):
@@ -535,11 +534,9 @@ class SifrSystem(object):
             elif longer_no == 'equal':
                 equal = True
                 greater = False
-        logging.debug("  ### END NUM COMPARE")
         return greater, equal
 
     def _orderer(self, d1, d2):
-        logging.debug(" ### START ORDERER")
         d1 = self._norm_ans(d1)
         d2 = self._norm_ans(d2)
         d1_num, d1_xcimal = self._dec_split(d1)
@@ -555,7 +552,7 @@ class SifrSystem(object):
             greater, equal = self._num_compare(d1_num, d2_num)
             if equal:
                 greater, equal = self._num_compare(d1_xcimal, d2_xcimal)
-        logging.debug(" ### END ORDERER")
+        logging.debug(" ### ORDERER RUN")
         return greater, equal
 
     def round(self, num, round_level):
@@ -599,7 +596,6 @@ class SifrSystem(object):
         return self._norm_ans(rounded)
 
     def _norm_ans(self, raw_ans: str):
-        logging.info("### STARTING NORMALIZED ANSWER")
         raw_ans = raw_ans.strip()
 
         # Fixes just decimal point being there
@@ -637,5 +633,4 @@ class SifrSystem(object):
                          self.sep_point + self.iden)):
             norm_ans = self.iden + self.sep_point + self.iden
 
-        logging.info("### FINISHED NORMALIZED ANSWER: " + norm_ans)
         return norm_ans

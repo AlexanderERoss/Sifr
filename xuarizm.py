@@ -16,7 +16,7 @@ from systems import SifrSystem
 
 # Mae breakpoint shorter
 bp = pdb.set_trace
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.WARNING)
 
 
 # DECORATORS
@@ -33,12 +33,14 @@ def mask_logging(func):
 class Formulae(object):
     @staticmethod
     def factorial(n):
+        logging.debug("### START FACTORIAL")
         ssys = n.ssys
         unit = Sifr(ssys.unit, ssys)
         result = Sifr(ssys.unit, ssys)
         while n != Sifr(ssys.iden, ssys):
             result *= n
             n -= unit
+        logging.debug("### END FACTORIAL: " + result.sifr)
         return result
 
 
@@ -79,7 +81,41 @@ class Constants(object):
 
         return Xuarizm(pi_algo, s, upper_bound=upper_bound).arith_series()
 
-    def return_phi(self, upper_bound):
+    def return_fibonacci_phi(self, upper_bound):
+        logging.debug("Calculating Phi using Fibonacci sequence")
+
+        @mask_logging
+        def masked_le(x, y):
+            return x <= y
+
+        @mask_logging
+        def masked_div(x, y):
+            return x / y
+
+        @mask_logging
+        def masked_add(x, y):
+            return x + y
+
+        unit = Sifr(self.ssys.unit, self.ssys)
+        fib_old = unit
+        fib_new = unit
+
+        counter = unit
+
+        while masked_le(counter, upper_bound):
+            logging.debug(" Term no: " + counter.sifr)
+            fib_prev = fib_old
+            fib_old = fib_new
+            fib_new = masked_add(fib_prev, fib_old)
+            counter = masked_add(counter, unit)
+
+        logging.debug(" Prior ratio for reference: " + masked_div(fib_old, fib_prev).sifr)
+        phi = masked_div(fib_new, fib_old)
+        logging.debug("Phi Estimate: " + phi.sifr)
+
+        return phi
+
+    def return_arith_phi(self, upper_bound):
         s = self.ssys
         fact = Formulae.factorial
 
@@ -94,6 +130,8 @@ class Constants(object):
         def phi_algo(k):
             return (((-one)**(k + one) * fact(two * k + one)) /
                     (fact(k + two) * fact(k) * four**(two * k + three)))
+
+        logging.debug("  NOTE THAT 13/8 WILL BE ADDED TO RUNNING RESULT")
 
         series_result = Xuarizm(phi_algo,
                                 s,
@@ -137,21 +175,29 @@ class Xuarizm(object):
         def masked_le(x, y):
             return x <= y
 
+        @mask_logging
+        def masked_eq(x, y):
+            return x == y
+
         self.algo = masked_algo
         self.m_add = masked_add
         self.m_prod = masked_prod
         self.m_le = masked_le
+        self.m_eq = masked_eq
         self.ssys = sifr_system
 
     def arith_series(self):
         term = self.lbnd
         series_result = Sifr(self.ssys.iden, self.ssys)
         logging.debug("XUARIZM: Starting term: " + series_result.sifr)
-        while self.m_le(term, self.ubnd):
+        added_term_is_zero = False
+        while self.m_le(term, self.ubnd) and not added_term_is_zero:
             added_value = self.algo(term)
-            logging.debug("    XUARIZM: " + added_value.sifr)
+            logging.debug("    XUARIZM: Increment : " + added_value.sifr)
             series_result = self.m_add(series_result, added_value)
             logging.debug("  XUARIZM: Running term: " + series_result.sifr)
+            added_term_is_zero = self.m_eq(added_value,
+                                           Sifr(self.ssys.iden, self.ssys))
             term = self.m_add(term, self.step)
 
         return series_result
