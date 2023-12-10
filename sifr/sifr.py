@@ -15,12 +15,8 @@
 # #############################################################################
 
 import logging
-import pdb
 
 from systems import SifrSystem
-
-# Make breakpoint shorter
-bp = pdb.set_trace
 
 
 class Sifr(object):

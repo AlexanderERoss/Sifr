@@ -8,11 +8,6 @@
 # #############################################################################
 
 import logging
-import pdb
-
-
-# Make breakpoint shorter
-bp = pdb.set_trace
 
 
 # DECORATORS
