@@ -13,9 +13,8 @@ setup(
     author_email='alex@ross.vip',
     license='GPL v3',
     packages=['sifr'],
-    # requires_python=">=3.7",  # Need to verify with earlier versions
-    install_requires=['logging>=0.5.1.2',  # To check when earlier logging
-                                           # syntax doesn't work
+    python_requires=">=3.7",  # Need to verify with earlier versions
+    install_requires=['logging',
                       ],
 
     classifiers=[
