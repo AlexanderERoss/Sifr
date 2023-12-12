@@ -14,9 +14,13 @@
 # etc.) are calculated in the SifrSystem object imported.
 # #############################################################################
 
+__author__ = "Alexander Ross <alex@ross.vip>"
+__version__ = "0.4.0"
+___date__ = "12 December 2023"
+
 import logging
 
-from systems import SifrSystem
+from sifr.systems import SifrSystem
 
 
 class Sifr(object):

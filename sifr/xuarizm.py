@@ -11,7 +11,7 @@ import logging
 
 from sifr import Sifr
 
-from systems import SifrSystem
+from sifr.systems import SifrSystem
 
 logging.getLogger().setLevel(logging.WARNING)
 
@@ -106,7 +106,9 @@ class Constants(object):
             fib_new = masked_add(fib_prev, fib_old)
             counter = masked_add(counter, unit)
 
-        logging.debug(" Prior ratio for reference: " + masked_div(fib_old, fib_prev).sifr)
+        logging.debug(" Prior ratio for reference: "
+                      + masked_div(fib_old,
+                                   fib_prev).sifr)
         phi = masked_div(fib_new, fib_old)
         logging.debug("Phi Estimate: " + phi.sifr)
 
