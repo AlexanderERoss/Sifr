@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='sifr',
-    version='0.4.0',
+    version='0.4.1',
     description='Package to calculate numbers to arbitrarily large ' +
     'significant figures (any base numbering system possible using list of ' +
     'characters representing digits in order and customizable punctuation ' +
@@ -20,7 +20,7 @@ setup(
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: " +
-        "GNU Affero General Public License v3 or later (AGPLv3+)",
+        "GNU General Public License v3 or later (GPLv3+)",
         "Operating System :: OS Independent",
     ],
 )

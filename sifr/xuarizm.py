@@ -1,6 +1,6 @@
 # #############################################################################
 # XUARIZM
-# This file contains Xuarizm (pronounced Kwarizm after the Persian
+# This file contains Xuarizm (pronounced Khwarizm after the Persian
 # mathematician from which the name algorithm originates), the class used for
 # calculating arithmetic (and geometric in the future) series using a given
 # function calculated until it converges to the precision given by the

@@ -1,5 +1,6 @@
 # #############################################################################
 # SIFRSYSTEM
+# #############################################################################
 # This file contains system. The primary one being the SifrSystem class which
 # defines an Arabic-like numbering system that is universally definable by
 # allocating neg, xcimal separators etc. and assigning the sequence of
@@ -30,18 +31,18 @@ class SifrScopeException(Exception):
 
 # SYSTEM
 class SifrSystem(object):
-    '''(digit_list, sep_point, neg_sym, xcimal_places, round_type)
+    '''(digit_list, radix, neg_sym, xcimal_places, round_type)
     '''
-    def __init__(self, digit_list='0123456789', sep_point='.', neg_sym='-',
+    def __init__(self, digit_list='0123456789', radix='.', neg_sym='-',
                  xcimal_places=40, round_type='half2inf'):
         unique_digits = len(set(digit_list)) != len(digit_list)
-        sep_not_in_digits = sep_point not in digit_list
+        radix_not_in_digits = radix not in digit_list
         neg_not_in_digits = neg_sym not in digit_list
-        if unique_digits and sep_not_in_digits and neg_not_in_digits:
+        if unique_digits and radix_not_in_digits and neg_not_in_digits:
             raise Exception("The list of characters is not unique " +
                             "and thus can't be used as a numbering system")
         self.digit_list = digit_list
-        self.sep_point = sep_point
+        self.radix = radix
         self.neg_sym = neg_sym
         self.xcimal_places = xcimal_places
         self.iden = digit_list[0]
@@ -54,7 +55,7 @@ class SifrSystem(object):
         logging.debug("SifrSystem instantiated with characters: " +
                       str(digit_list) +
                       ", sub-integer separator: " +
-                      str(sep_point) +
+                      str(radix) +
                       ", and negative symbol: " +
                       neg_sym)
 
@@ -90,7 +91,7 @@ class SifrSystem(object):
 
     def _dec_split(self, d):
         ''' Splits a decimal (non-negative) into it's consituent parts'''
-        d_parts = d.split(self.sep_point)
+        d_parts = d.split(self.radix)
         d_num = d_parts[0]
         d_xcimal = self.iden if len(d_parts) == 1 else d_parts[1]
 
@@ -261,7 +262,7 @@ class SifrSystem(object):
         if carry and iden_next == self.unit:
             # Only applies if addition
             logging.debug("      Adding a unit to start for add")
-            result = self.unit + num + self.sep_point + xcimal
+            result = self.unit + num + self.radix + xcimal
         elif carry:
             logging.debug("      Zero is crossed so answer is subtracted " +
                           "from zero")
@@ -272,11 +273,11 @@ class SifrSystem(object):
             if diff_carry:  # Basically if decimal is non-zero
                 diff_num, _ = arith_function(diff_num, self.unit)
 
-            result = diff_num + self.sep_point + diff_xcimal
+            result = diff_num + self.radix + diff_xcimal
             zero_cross = True
             logging.debug("      Zero crossed")
         else:
-            result = num + self.sep_point + xcimal
+            result = num + self.radix + xcimal
 
         logging.debug(" ### END DEC COMBINE: " + result.strip(self.iden))
         return result.strip(self.iden), zero_cross
@@ -284,7 +285,7 @@ class SifrSystem(object):
     def _raise_by_base(self, d, exp):
         ''' Makes each digit in a number 'exp' bases higher for the digit (d).
         Doesn't accept negative numbers '''
-        sep = self.sep_point
+        sep = self.radix
         if exp == 0:
             result = d
         elif exp == 1:
@@ -379,11 +380,11 @@ class SifrSystem(object):
 
         xc_reduce = len(d1_xcimal)
         if xc_reduce >= len(ans_xc_num):
-            ans_xc_fin = (self.iden + self.sep_point
+            ans_xc_fin = (self.iden + self.radix
                           + self.iden*(xc_reduce - len(ans_xc_num))
                           + ans_xc_num + ans_xc_xcimal)
         else:
-            ans_xc_fin = (ans_xc_num[:-xc_reduce] + self.sep_point
+            ans_xc_fin = (ans_xc_num[:-xc_reduce] + self.radix
                           + ans_xc_num[-xc_reduce:] + ans_xc_xcimal)
 
         logging.debug("  Answer xcimal reduced to add: " + ans_xc_fin)
@@ -429,7 +430,7 @@ class SifrSystem(object):
         modulus = full_subt(numer, prod)
         logging.debug("     ##### Remainder: " + prod)
         logging.debug("    ##### END TIMES IN NUM COUNT")
-        return quot.split(self.sep_point)[0], self._norm_ans(modulus)
+        return quot.split(self.radix)[0], self._norm_ans(modulus)
 
     def _base_div(self, numer, denom):
         logging.info(" ### START BASE DIV")
@@ -442,7 +443,7 @@ class SifrSystem(object):
         mod_zero = False
         xcim_count = 1
         first_div, modls = lil_div(numer, denom)
-        divd = first_div + self.sep_point
+        divd = first_div + self.radix
         logging.debug("  Main number: " + divd)
         logging.debug("  Modulus to be divided in xcimal: " + modls)
 
@@ -573,16 +574,16 @@ class SifrSystem(object):
                     main_no, main_carry = self._base_add_alg(main_no,
                                                              self.unit)
                     if main_carry:
-                        rounded = (self.unit + main_no + self.sep_point +
+                        rounded = (self.unit + main_no + self.radix +
                                    rounded_xcimal)
                     else:
-                        rounded = (main_no + self.sep_point + rounded_xcimal)
+                        rounded = (main_no + self.radix + rounded_xcimal)
                 else:
-                    rounded = main_no + self.sep_point + rounded_xcimal
+                    rounded = main_no + self.radix + rounded_xcimal
             else:
                 logging.debug("     Number after limit is on lower range of "
                               + "digit list, round down")
-                rounded = main_no + self.sep_point + rounded_xcimal
+                rounded = main_no + self.radix + rounded_xcimal
         else:
             logging.debug("    Number already in rounding bounds")
             rounded = num
@@ -594,38 +595,38 @@ class SifrSystem(object):
         raw_ans = raw_ans.strip()
 
         # Fixes just decimal point being there
-        just_neg_and_point = raw_ans == (self.neg_sym + self.sep_point)
-        just_point = raw_ans == self.sep_point
+        just_neg_and_point = raw_ans == (self.neg_sym + self.radix)
+        just_point = raw_ans == self.radix
         if just_neg_and_point or just_point:
-            norm_ans = self.iden + self.sep_point + self.iden
+            norm_ans = self.iden + self.radix + self.iden
         else:
             norm_ans = raw_ans
 
         # Intentionally chosen to always have a zero to indicate that this
         # type is always capable of behaving as a float.
-        if norm_ans[-1] == self.sep_point:
+        if norm_ans[-1] == self.radix:
             norm_ans = norm_ans.rstrip() + self.iden
-        if norm_ans[0] == self.sep_point:
+        if norm_ans[0] == self.radix:
             norm_ans = self.iden + norm_ans
-        if self.sep_point not in norm_ans:
-            norm_ans = norm_ans + self.sep_point + self.iden
+        if self.radix not in norm_ans:
+            norm_ans = norm_ans + self.radix + self.iden
         # Fix trailing zeroes
-        while norm_ans[-1:] == self.iden and norm_ans[-2:] != (self.sep_point
+        while norm_ans[-1:] == self.iden and norm_ans[-2:] != (self.radix
                                                                + self.iden):
             norm_ans = norm_ans[:-1]
         # Fix leading zeroes
         while norm_ans[:1] == self.iden and norm_ans[:2] != (self.iden
-                                                             + self.sep_point):
+                                                             + self.radix):
             norm_ans = norm_ans[1:]
 
         # Fix neg then point
-        if norm_ans[:2] == (self.neg_sym + self.sep_point):
-            norm_ans = self.neg_sym + self.iden + self.sep_point + norm_ans[2:]
+        if norm_ans[:2] == (self.neg_sym + self.radix):
+            norm_ans = self.neg_sym + self.iden + self.radix + norm_ans[2:]
 
         # Fixes cases where zero to be non-negative form of zero
         if (norm_ans == (self.neg_sym + self.iden) or
             norm_ans == (self.neg_sym + self.iden +
-                         self.sep_point + self.iden)):
-            norm_ans = self.iden + self.sep_point + self.iden
+                         self.radix + self.iden)):
+            norm_ans = self.iden + self.radix + self.iden
 
         return norm_ans
